@@ -94,7 +94,8 @@ public class LoadData : MonoBehaviour
         {
             GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
             cube.transform.parent = Spawner.transform;
-            cube.transform.localScale = new Vector3(28f, 28f, 0.1f);
+            cube.transform.localScale = new Vector3(5f, 5f, 0.1f);
+            
             cube.transform.position = new Vector3(pca.TransformedData[i, 0], pca.TransformedData[i, 1], pca.TransformedData[i, 2]);
             cube.GetComponent<Renderer>().material.mainTexture = textureList[i];
             cube.GetComponent<Renderer>().material.color = ColorMap[labels[i]];
@@ -110,6 +111,7 @@ public class LoadData : MonoBehaviour
         {
             var cube = Spawner.transform.GetChild(i);
             cube.LookAt(Camera.main.transform.position);
+            
         }
         
     }
