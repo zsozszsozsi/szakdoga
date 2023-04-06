@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -7,9 +8,14 @@ using UnityEngine.UI;
 
 public class LogRegression : MonoBehaviour
 {
-    public GameObject BlueParent;
-    public GameObject RedParent;
+    private bool IsLearning = false;
 
+    private int BlueCount;
+    private int RedCount;
+
+    private List<GameObject> Samples;
+
+    public GameObject Spawner;
     public GameObject BlueSample;
     public GameObject RedSample;
 
@@ -18,79 +24,76 @@ public class LogRegression : MonoBehaviour
     public Slider B0;
 
     public Button LearnBtn;
+    public Button ClearBtn;
 
     public GameObject DecisionBoundaryGO;
-    private LineRenderer DecisionBoundary;
+    private DecisionBoundary DecisionBoundary;
 
-    private float MaxX = 100f;
-    private float MinX = -100f;
+    private float MaxX = 2.6f;
+    private float MinX = -2.6f;
 
-    private float MaxY = 100f;
-    private float MinY = -100f;
+    private float MaxY = 1.27f;
+    private float MinY = -1.27f;
+
+    private float[] weigths = new float[2];
+    private float[] biases = new float[1];
+
+    public float b_0;
+    public float w_0;
+    public float w_1;
 
     private void Start()
     {
-        DecisionBoundary = DecisionBoundaryGO.GetComponent<LineRenderer>();
+        DecisionBoundary = DecisionBoundaryGO.GetComponent<DecisionBoundary>();
+        Samples = new List<GameObject>();
+
+        weigths[0] = W0.value;
+        weigths[1] = W1.value;
+        biases[0] = B0.value;
+
     }
 
-    private (Vector3, Vector3) CalculateDecisionBoundary()
-    {
 
-        var x = W0.value;
-        var y = W1.value;
-        var b = B0.value;
-
-        if(y == 0 && x == 0)
-        {
-            return new(
-                new Vector3(0, 0 + b, -2),
-                new Vector3(0, 0 + b, -2)
-            );
-        }
-
-        if (y == 0)
-        {
-            return new(
-                new Vector3(0, MinY + b, -2),
-                new Vector3(0, MaxY + b, -2)
-            );
-        }
-
-        if (x == 0)
-        {
-            return new(
-                new Vector3(MinX, 0 + b, -2),
-                new Vector3(MaxX, 0 + b, -2)
-            );
-        }
-
-        return new(
-            new Vector3(MinX, -MinX*x / y + B0.value, -2f),
-            new Vector3(MaxX, -MaxX*x / y + B0.value, -2f)
-       );
-    }
-
+    [Range(0, 1)] public float cd = 0.5f;
+    [Range(0, 1)] public float lr = 0.001f;
+    private float t = 0f;
 
     // Update is called once per frame
     void Update()
     {
 
-        if(RedParent.transform.childCount != 0 && BlueParent.transform.childCount != 0)
+        w_0 = weigths[0];
+        w_1 = weigths[1];
+        b_0 = biases[0];
+
+        if (!IsLearning)
         {
-            LearnBtn.interactable = true;
+            ClearBtn.interactable = true;
+
+            W0.interactable = true;
+            weigths[0] = W0.value;
+
+            W1.interactable = true;
+            weigths[1] = W1.value;
+
+            B0.interactable = true;
+            biases[0] = B0.value;
         }
         else
         {
-            LearnBtn.interactable = false;
+            ClearBtn.interactable = false;
+
+            W0.interactable = false;
+            W1.interactable = false;
+            B0.interactable = false;
         }
 
-        var start = CalculateDecisionBoundary().Item1;
-        var end = CalculateDecisionBoundary().Item2;
+        if(RedCount > 0 && BlueCount > 0)
+            LearnBtn.interactable = true;
+        else
+            LearnBtn.interactable = false;
 
-        DecisionBoundary.SetPositions(new Vector3[] { 
-            start,
-            end
-        });
+        DecisionBoundary.DrawDecisionBoundary(weigths[0], weigths[1], biases[0]);
 
         // Left Click: spawn red sample
         if (Input.GetMouseButtonDown(0))
@@ -98,19 +101,18 @@ public class LogRegression : MonoBehaviour
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
 
-            if(Physics.Raycast(ray, out hit))
+            if (Physics.Raycast(ray, out hit))
             {
-                if(hit.point.x > MaxX || hit.point.x < MinX || hit.point.y > MaxY || hit.point.y < MinY)
+                if (hit.point.x < MaxX && hit.point.x > MinX && hit.point.y < MaxY && hit.point.y > MinY)
                 {
-                    Debug.Log("halo!");
-                }
-                else
-                {
-                    hit.point = new Vector3(hit.point.x, hit.point.y, -2);
-                    Instantiate(RedSample, hit.point, Quaternion.identity, RedParent.transform);
-                }
+                    hit.point = new Vector3(hit.point.x, hit.point.y, -1);
+                    var go = Instantiate(RedSample, hit.point, Quaternion.identity, Spawner.transform);
 
+                    RedCount++;
+                    Samples.Add(go);
+                }
             }
+
         }
 
         // Right Click: spawn blue sample
@@ -121,67 +123,52 @@ public class LogRegression : MonoBehaviour
 
             if (Physics.Raycast(ray, out hit))
             {
-                if (hit.point.x > MaxX || hit.point.x < MinX || hit.point.y > MaxY || hit.point.y < MinY)
+                if (hit.point.x < MaxX && hit.point.x > MinX && hit.point.y < MaxY && hit.point.y > MinY)
                 {
-                    Debug.Log("halo!");
+                    hit.point = new Vector3(hit.point.x, hit.point.y, -1);
+                    var go = Instantiate(BlueSample, hit.point, Quaternion.identity, Spawner.transform);
+
+                    BlueCount++;
+                    Samples.Add(go);
                 }
-                else
-                {
-                    hit.point = new Vector3(hit.point.x, hit.point.y, -2);
-                    Instantiate(BlueSample, hit.point, Quaternion.identity, BlueParent.transform);
-                }
+                
             }
+        }
+        
+        t += Time.deltaTime;
+
+        if (IsLearning && t > cd)
+        {
+            GradientDescent(100, lr);
+
+            t = 0f;
         }
     }
 
     public void ClearSamples()
     {
-        for(int i = 0; i < RedParent.transform.childCount; i++)
+        for(int i = 0; i < Samples.Count; i++)
         {
-            Destroy(RedParent.transform.GetChild(i).gameObject);
+            Destroy(Samples[i]);
         }
 
-        for (int i = 0; i < BlueParent.transform.childCount; i++)
-        {
-            Destroy(BlueParent.transform.GetChild(i).gameObject);
-        }
+        Samples = new List<GameObject>();
+
+        RedCount = 0;
+        BlueCount = 0;
     }
-
-    private float gradientW0;
-    private float gradientW1;
-    private float gradientB0;
 
     public void Learn()
     {
-        const float h = 0.0001f;
-        const float lr = 0.001f;
-        var originalLoss = Loss();
+        //var network = new NeuralNetwork(2, new int[] { 1 }, new IActivationFunction.FunctionType[] {IActivationFunction.FunctionType.Sigmoid});
 
-        for (int i = 0; i < 1000; i++)
+        IsLearning = !IsLearning;
+        LearnBtn.GetComponentInChildren<Text>().text = IsLearning ? "Stop Learning!": "Start Learning!";
+
+        /*for(int i = 0; i < Samples.Count; i++)
         {
-            W0.value += h;
-            var deltaCost = Loss() - originalLoss;
-            W0.value -= h;
-            gradientW0 = deltaCost / h;
-
-
-            W1.value += h;
-            deltaCost = Loss() - originalLoss;
-            W1.value -= h;
-            gradientW1 = deltaCost / h;
-
-
-            B0.value += h;
-            deltaCost = Loss() - originalLoss;
-            B0.value -= h;
-            gradientB0 = deltaCost / h;
-
-            W0.value -= gradientW0 * lr;
-            W1.value -= gradientW1 * lr;
-            B0.value -= gradientB0 * lr;
-
-            originalLoss = Loss();
-        }
+            Debug.Log("old: " + ComputeOutput(Samples[i].transform) + ", new : " + network.FeedForward(Samples[i].transform.position.x, Samples[i].transform.position.y));
+        }*/
     }
 
     private float Sigmoid(float x)
@@ -189,11 +176,20 @@ public class LogRegression : MonoBehaviour
         return 1 / ( 1 + Mathf.Exp(-x) );
     }
 
-    private float log10(float x)
+    private float ComputeOutput(Transform sample)
+    {
+        return Sigmoid(
+            weigths[0] * sample.position.x
+            + weigths[1] * sample.position.y
+            + biases[0]
+            );
+    }
+
+    private float log(float x)
     {
         if (x != 0)
         {
-            return Mathf.Log10(x);
+            return Mathf.Log(x);
         }
 
         return float.MinValue;
@@ -203,35 +199,71 @@ public class LogRegression : MonoBehaviour
     {
         var loss = 0f;
 
-        for (int i = 0; i < RedParent.transform.childCount; i++)
+        for (int i = 0; i < Samples.Count; i++)
         {
-            var y = 1f; // true label
+            var y = Samples[i].transform.GetComponent<LabelManager>().Label; // true label
 
-            var output = W0.value * RedParent.transform.GetChild(i).transform.position.x 
-                + W1.value * RedParent.transform.GetChild(i).transform.position.y
-                + B0.value;
+            var output = ComputeOutput(Samples[i].transform);
 
-            output = Sigmoid(output);
-            //Debug.Log("red: " + output + ", should be one.");
-            loss += -y * log10(output) - ( 1 - y ) * log10(1 - output);
+            loss += -y * log(output) - ( 1 - y ) * log(1 - output);
         }
 
-        //Debug.Log("loss after red: " + loss);
+        // Loss func is 1/N * (-y * log(y^) - (1-y) * log(1-y^))
 
-        for (int i = 0; i < BlueParent.transform.childCount; i++)
+        return loss/Samples.Count;
+    }
+
+
+    private void GradientDescent(int epochs, float lr)
+    {
+        System.Random random = new System.Random();
+        
+        for(int i = 0; i < epochs; i++)
         {
-            var y = 0f; // true label
+            Samples = Samples.OrderBy(x => random.Next()).ToList();
 
-            var output = W0.value * BlueParent.transform.GetChild(i).transform.position.x
-                + W1.value * BlueParent.transform.GetChild(i).transform.position.y
-                + B0.value;
+            var errors = new float[Samples.Count];
 
-            output = Sigmoid(output);
-            //Debug.Log("blue: " + output + ", should be zero.");
-            loss += -y * log10(output) - (1 - y) * log10(1 - output);
+            for(int j = 0; j < Samples.Count; j++)
+            {
+                var y_true = Samples[j].GetComponent<LabelManager>().Label;
+                var y_pred = ComputeOutput(Samples[j].transform);
+                errors[j] = y_pred - y_true;
+
+                //Debug.Log(errors[j] + ": " + (y_true == 0 ? "Blue" : "Red"));
+            }
+
+            for(int j = 0; j < weigths.Length; j++)
+            {
+                float gradient = 0f;
+
+                for(int k = 0; k < Samples.Count; k++)
+                {
+                    if (j == 0)
+                        gradient += errors[k] * Samples[k].transform.position.x;
+                    else
+                        gradient += errors[k] * Samples[k].transform.position.y;
+                }
+
+                weigths[j] -= lr * gradient / Samples.Count; 
+            }
+
+            for(int j = 0; j < biases.Length; j++)
+            {
+                float gradient = 0f;
+                for(int k = 0; k < Samples.Count; k++)
+                {
+                    gradient += errors[k] * 1;
+                }
+
+                biases[j] -= lr * gradient / Samples.Count;
+            }
+
+            W0.value = weigths[0];
+            W1.value = weigths[1];
+            B0.value = biases[0];
         }
 
-        //Debug.Log(loss/(RedParent.transform.childCount + BlueParent.transform.childCount)); // Loss func is 1/N * (-y * log(y^) - (1-y) * log(1-y^))
-        return loss;
+        Debug.Log("Loss: " + Loss());
     }
 }
