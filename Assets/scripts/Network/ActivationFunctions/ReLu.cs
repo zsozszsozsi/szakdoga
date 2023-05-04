@@ -8,4 +8,14 @@ public class ReLu : IActivationFunction
     {
         return z > 0 ? z : 0;
     }
+
+    float IActivationFunction.Derivative(float z)
+    {
+        return z > 0 ? 1 : 0;
+    }
+
+    string IActivationFunction.ToString()
+    {
+        return "ReLu";
+    }
 }

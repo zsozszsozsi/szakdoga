@@ -8,4 +8,13 @@ public class Linear : IActivationFunction
     {
         return z;
     }
+
+    float IActivationFunction.Derivative(float z)
+    {
+        return 1;
+    }
+    string IActivationFunction.ToString()
+    {
+        return "Linear";
+    }
 }

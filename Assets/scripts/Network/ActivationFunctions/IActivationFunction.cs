@@ -8,8 +8,13 @@ public interface IActivationFunction
     {
         Linear,
         Sigmoid,
-        ReLu
+        ReLu,
+        TanH
     }
 
     public float Func(float z);
+
+    public float Derivative(float z);
+
+    public string ToString();
 }

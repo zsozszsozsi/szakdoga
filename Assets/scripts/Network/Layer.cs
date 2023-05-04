@@ -10,19 +10,8 @@ public class Layer
     public List<Unit> Units { get; private set; }
 
     public float[] Outputs { get; private set; }
+    public float[] DesiredOutput { get; set; }
 
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 
     public Layer(int inCount, int unitCount, IActivationFunction.FunctionType actFunction)
     {
@@ -30,7 +19,9 @@ public class Layer
 
         this.InCount = inCount;
         this.UnitCount = unitCount;
+
         Outputs = new float[unitCount];
+        DesiredOutput = new float[unitCount];
 
         for (int i = 0; i < unitCount; i++)
         {
@@ -43,6 +34,9 @@ public class Layer
                     break;
                 case IActivationFunction.FunctionType.ReLu:
                     activation = new ReLu();
+                    break;
+                case IActivationFunction.FunctionType.TanH:
+                    activation = new TanH();
                     break;
                 default:
                     activation = new Linear();
@@ -58,6 +52,7 @@ public class Layer
         for(int i = 0; i < Units.Count; i++)
         {
             Outputs[i] = Units[i].CalcOutput(inputs);
+            DesiredOutput[i] = Outputs[i];
         }
     }
 }

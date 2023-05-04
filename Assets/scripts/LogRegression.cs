@@ -8,12 +8,13 @@ using UnityEngine.UI;
 
 public class LogRegression : MonoBehaviour
 {
-    private bool IsLearning = false;
+    public bool IsLearning = false;
 
     private int BlueCount;
     private int RedCount;
 
     private List<GameObject> Samples;
+    private List<List<float>> SamplesForNetwork;
 
     public GameObject Spawner;
     public GameObject BlueSample;
@@ -42,26 +43,32 @@ public class LogRegression : MonoBehaviour
     public float w_0;
     public float w_1;
 
+    private NeuralNetwork network;
+
     private void Start()
     {
         DecisionBoundary = DecisionBoundaryGO.GetComponent<DecisionBoundary>();
         Samples = new List<GameObject>();
+        SamplesForNetwork = new List<List<float>>();
 
         weigths[0] = W0.value;
         weigths[1] = W1.value;
         biases[0] = B0.value;
 
+
+        network = new NeuralNetwork(2, new int[] { 1 }, new IActivationFunction.FunctionType[] { IActivationFunction.FunctionType.Sigmoid }, ILossFunction.LossType.LogisticLoss);
+        //Debug.Log(network);
+        DecisionBoundary.DrawDecisionBoundary(network);
     }
 
 
     [Range(0, 1)] public float cd = 0.5f;
-    [Range(0, 1)] public float lr = 0.001f;
+    [Range(0.001f, 1)] public float lr = 0.001f;
     private float t = 0f;
 
     // Update is called once per frame
     void Update()
     {
-
         w_0 = weigths[0];
         w_1 = weigths[1];
         b_0 = biases[0];
@@ -93,7 +100,9 @@ public class LogRegression : MonoBehaviour
         else
             LearnBtn.interactable = false;
 
-        DecisionBoundary.DrawDecisionBoundary(weigths[0], weigths[1], biases[0]);
+        //DecisionBoundary.DrawDecisionBoundary(weigths[0], weigths[1], biases[0]);
+        //DecisionBoundary.DrawDecisionBoundary(network.Layers[0].Units[0].Weights[0], network.Layers[0].Units[0].Weights[1], network.Layers[0].Units[0].Bias);
+        DecisionBoundary.DrawDecisionBoundary(network);
 
         // Left Click: spawn red sample
         if (Input.GetMouseButtonDown(0))
@@ -106,10 +115,12 @@ public class LogRegression : MonoBehaviour
                 if (hit.point.x < MaxX && hit.point.x > MinX && hit.point.y < MaxY && hit.point.y > MinY)
                 {
                     hit.point = new Vector3(hit.point.x, hit.point.y, -1);
-                    var go = Instantiate(RedSample, hit.point, Quaternion.identity, Spawner.transform);
 
-                    RedCount++;
-                    Samples.Add(go);
+                    //var go = Instantiate(RedSample, hit.point, Quaternion.identity, Spawner.transform);
+
+                    //RedCount++;
+                    //Samples.Add(go);
+                    //SamplesForNetwork.Add(new List<float> {go.GetComponent<LabelManager>().Label, go.transform.position.x, go.transform.position.y});
                 }
             }
 
@@ -126,10 +137,12 @@ public class LogRegression : MonoBehaviour
                 if (hit.point.x < MaxX && hit.point.x > MinX && hit.point.y < MaxY && hit.point.y > MinY)
                 {
                     hit.point = new Vector3(hit.point.x, hit.point.y, -1);
-                    var go = Instantiate(BlueSample, hit.point, Quaternion.identity, Spawner.transform);
 
-                    BlueCount++;
-                    Samples.Add(go);
+                    //var go = Instantiate(BlueSample, hit.point, Quaternion.identity, Spawner.transform);
+
+                    //BlueCount++;
+                    //Samples.Add(go);
+                    //SamplesForNetwork.Add(new List<float> { go.GetComponent<LabelManager>().Label, go.transform.position.x, go.transform.position.y });
                 }
                 
             }
@@ -139,20 +152,40 @@ public class LogRegression : MonoBehaviour
 
         if (IsLearning && t > cd)
         {
-            GradientDescent(100, lr);
-
+            //GradientDescent(100, lr);
+            network.Learn(100, SamplesForNetwork);
+            //DecisionBoundary.DrawDecisionBoundary(network);
             t = 0f;
+        }
+    }
+
+    public void InstantiateSample(GameObject sample, Vector3 pos)
+    {
+        var go = Instantiate(sample, pos, Quaternion.identity, Spawner.transform);
+        var label = go.GetComponent<LabelManager>().Label;
+        SamplesForNetwork.Add(new List<float> { label, go.transform.position.x, go.transform.position.y });
+        Samples.Add(go);
+        
+        if(label == 1)
+        {
+            RedCount++;
+        }
+        else
+        {
+            BlueCount++;
         }
     }
 
     public void ClearSamples()
     {
+        
         for(int i = 0; i < Samples.Count; i++)
         {
             Destroy(Samples[i]);
         }
 
         Samples = new List<GameObject>();
+        SamplesForNetwork = new List<List<float>>();
 
         RedCount = 0;
         BlueCount = 0;
@@ -160,15 +193,8 @@ public class LogRegression : MonoBehaviour
 
     public void Learn()
     {
-        //var network = new NeuralNetwork(2, new int[] { 1 }, new IActivationFunction.FunctionType[] {IActivationFunction.FunctionType.Sigmoid});
-
         IsLearning = !IsLearning;
         LearnBtn.GetComponentInChildren<Text>().text = IsLearning ? "Stop Learning!": "Start Learning!";
-
-        /*for(int i = 0; i < Samples.Count; i++)
-        {
-            Debug.Log("old: " + ComputeOutput(Samples[i].transform) + ", new : " + network.FeedForward(Samples[i].transform.position.x, Samples[i].transform.position.y));
-        }*/
     }
 
     private float Sigmoid(float x)
@@ -220,7 +246,7 @@ public class LogRegression : MonoBehaviour
         
         for(int i = 0; i < epochs; i++)
         {
-            Samples = Samples.OrderBy(x => random.Next()).ToList();
+            Samples = Samples.OrderBy(x => random.Next()).ToList().Take(50).ToList();
 
             var errors = new float[Samples.Count];
 

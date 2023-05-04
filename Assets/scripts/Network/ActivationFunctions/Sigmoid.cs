@@ -8,4 +8,14 @@ public class Sigmoid : IActivationFunction
     {
         return 1 / (1 + Mathf.Exp(-z));
     }
+
+    float IActivationFunction.Derivative(float z)
+    {
+        return z * (1 - z);
+    }
+
+    string IActivationFunction.ToString()
+    {
+        return "Sigmoid";
+    }
 }
