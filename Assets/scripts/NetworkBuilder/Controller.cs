@@ -14,6 +14,8 @@ public class Controller : MonoBehaviour
     public GameObject Neuron;
     public GameObject Weight;
 
+    public GameObject LayerBtn;
+
     private void Awake()
     {
         if(Instance != null && Instance != this)
@@ -34,14 +36,24 @@ public class Controller : MonoBehaviour
 
     public void BuildConnections()
     {
+        for(int i = 0; i < Connections.transform.childCount; i++)
+        {
+            Destroy(Connections.transform.GetChild(i).gameObject);
+        }
+
+
         for (int i = 0; i < NeuralNetwork.transform.childCount - 1; i++)
         {
-            for (int j = 0; j < NeuralNetwork.transform.GetChild(i).childCount; j++)
+            for (int j = 0; j < NeuralNetwork.transform.GetChild(i).childCount; j++) 
             {
+                if (NeuralNetwork.transform.GetChild(i).GetChild(j).tag == "Button") continue;
+
                 var from = NeuralNetwork.transform.GetChild(i).GetChild(j).position;
 
                 for (int k = 0; k < NeuralNetwork.transform.GetChild(i + 1).childCount; k++)
                 {
+                    if (NeuralNetwork.transform.GetChild(i + 1).GetChild(k).tag == "Button") continue;
+
                     var to = NeuralNetwork.transform.GetChild(i + 1).GetChild(k).position;
 
                     var wx = (from.x + to.x) / 2;
@@ -84,7 +96,7 @@ public class Controller : MonoBehaviour
         if (childCount == 0)
         {
             //if there is no input
-            Instantiate(Input, new Vector3(0,0,7), Quaternion.identity, inputParent);
+            Instantiate(Input, inputParent);
         }
         else
         {
@@ -103,19 +115,29 @@ public class Controller : MonoBehaviour
 
             inputParent.GetChild(childCount).position += new Vector3(0, -0.5f, 0);
         }
+
+        BuildConnections();
     }
     
     public void RemoveInput()
     {
-        var inputParent = NeuralNetwork.transform.GetChild(0);
-        var childCount = inputParent.childCount;
-
-        if(childCount != 0)
+        var childCount = NeuralNetwork.transform.childCount;
+        if(childCount == 0)
         {
-            Destroy(inputParent.GetChild(childCount - 1).gameObject);
+            print("Nothing to remove!");
+            return;
+        }
 
-            childCount = inputParent.childCount;
-            for(int i = 0; i < childCount; i++)
+        var inputParent = NeuralNetwork.transform.GetChild(0);
+        var inputCount = inputParent.childCount;
+        
+
+        if(inputCount > 1)
+        {
+            DestroyImmediate(inputParent.GetChild(inputCount - 1).gameObject);
+
+            inputCount = inputParent.childCount;
+            for(int i = 0; i < inputCount; i++)
             {
                 var input = inputParent.GetChild(i);
 
@@ -123,6 +145,12 @@ public class Controller : MonoBehaviour
             }
 
         }
+        else if(inputCount == 1 && childCount == 1) 
+        {
+            DestroyImmediate(NeuralNetwork.transform.GetChild(0).gameObject);
+        }
+
+        BuildConnections();
     }
 
     public void AddLayer()
@@ -136,7 +164,7 @@ public class Controller : MonoBehaviour
             return;
         }
 
-        if(childCount == 8)
+        if(childCount == 7)
         {
             print("Maximum amount of layers is 7");
             return;
@@ -144,7 +172,8 @@ public class Controller : MonoBehaviour
         
         var lastChild = NeuralNetwork.transform.GetChild(childCount - 1);
         var newLayerGO = new GameObject($"Layer{childCount - 1}");
-        Instantiate(Neuron, new Vector3(0, 0, 7), Quaternion.identity, newLayerGO.transform);
+        Instantiate(LayerBtn, newLayerGO.transform);
+        Instantiate(Neuron, newLayerGO.transform);
         newLayerGO.transform.parent = parent;
         newLayerGO.transform.position = lastChild.position;
 
@@ -155,6 +184,8 @@ public class Controller : MonoBehaviour
         }
 
         newLayerGO.transform.position += new Vector3(1, 0, 0);
+
+        BuildConnections();
     }
 
     public void RemoveLayer()
@@ -164,7 +195,7 @@ public class Controller : MonoBehaviour
 
         if (childCount != 0)
         {
-            Destroy(parent.GetChild(childCount - 1).gameObject);
+            DestroyImmediate(parent.GetChild(childCount - 1).gameObject);
             childCount = parent.childCount;
 
             for(int i = 0; i < childCount; i++)
@@ -173,11 +204,61 @@ public class Controller : MonoBehaviour
             }
 
         }
+
+        BuildConnections();
+    }
+
+    public void AddNeuron(Transform layer)
+    {
+        var childCount = layer.childCount;
+        var lastInput = layer.GetChild(childCount - 1).position;
+
+        Instantiate(Neuron, lastInput, Quaternion.identity, layer);
+        // childCount = inputParent.childCount; here if we dont update we dont need to care about the loop and changing the last pos
+        // cause we want to change the pos from 0..childcount-1
+
+        for (int i = 0; i < childCount; i++)
+        {
+            var input = layer.GetChild(i);
+
+            if (input.tag == "Button") continue;
+
+            input.position += new Vector3(0, 0.5f, 0);
+        }
+
+        layer.GetChild(childCount).position += new Vector3(0, -0.5f, 0);
+
+        BuildConnections();
+    }
+
+    public void RemoveNeuron(Transform layer)
+    {
+        var childCount = layer.childCount;
+
+        if(childCount == 2) // 2 because first is the button and the second one is the one neuron
+        {
+            print("Use the remove layer button!");
+            return;
+        }
+
+        DestroyImmediate(layer.GetChild(childCount - 1).gameObject);
+
+        childCount = layer.childCount;
+        for (int i = 0; i < childCount; i++)
+        {
+            var input = layer.GetChild(i);
+
+            if (input.tag == "Button") continue;
+
+            input.position += new Vector3(0, -0.5f, 0);
+        }
+
+        BuildConnections();
     }
 
     // Update is called once per frame
     void Update()
     {
-        BuildConnections();
+        
     }
 }
