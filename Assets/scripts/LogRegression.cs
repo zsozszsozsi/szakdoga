@@ -102,7 +102,8 @@ public class LogRegression : MonoBehaviour
 
         //DecisionBoundary.DrawDecisionBoundary(weigths[0], weigths[1], biases[0]);
         //DecisionBoundary.DrawDecisionBoundary(network.Layers[0].Units[0].Weights[0], network.Layers[0].Units[0].Weights[1], network.Layers[0].Units[0].Bias);
-        DecisionBoundary.DrawDecisionBoundary(network);
+        //DecisionBoundary.DrawDecisionBoundary(network);
+        //DecisionBoundary.DrawDecisionBoundary(Network.Instance.NeuralNetwork.Layers[0].Units[0].Weights[0], Network.Instance.NeuralNetwork.Layers[0].Units[0].Weights[1], Network.Instance.NeuralNetwork.Layers[0].Units[0].Bias);
 
         // Left Click: spawn red sample
         if (Input.GetMouseButtonDown(0))
@@ -153,8 +154,19 @@ public class LogRegression : MonoBehaviour
         if (IsLearning && t > cd)
         {
             //GradientDescent(100, lr);
-            network.Learn(100, SamplesForNetwork);
+            //network.Learn(100, SamplesForNetwork);
             //DecisionBoundary.DrawDecisionBoundary(network);
+            
+            if(Network.Instance.NeuralNetwork != null)
+            {
+                Network.Instance.NeuralNetwork.Learn(100, SamplesForNetwork);
+                
+            }
+            else
+            {
+                print("First you need to build a network!");
+            }
+            
             t = 0f;
         }
     }

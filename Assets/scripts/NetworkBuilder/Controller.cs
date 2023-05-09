@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Controller : MonoBehaviour
 {
@@ -254,6 +255,38 @@ public class Controller : MonoBehaviour
         }
 
         BuildConnections();
+    }
+
+    public void BuildNetwork()
+    {
+        var childCount = NeuralNetwork.transform.childCount;
+        if(childCount < 2)
+        {
+            print("First you need to build a network!");
+            return;
+        }
+
+        var featureCount = NeuralNetwork.transform.GetChild(0).childCount;
+        int[] layerSizes = new int[NeuralNetwork.transform.childCount - 1];
+        IActivationFunction.FunctionType[] actFunctions = new IActivationFunction.FunctionType[layerSizes.Length];
+
+        for(int i = 1; i < NeuralNetwork.transform.childCount; i++)
+        {
+            layerSizes[i - 1] = NeuralNetwork.transform.GetChild(i).childCount - 1;
+            actFunctions[i - 1] = IActivationFunction.FunctionType.Sigmoid;
+        }
+
+        Network.Instance.NeuralNetwork = 
+            new NeuralNetwork(
+                featureCount: featureCount,
+                layerSizes: layerSizes, 
+                actFunctions: actFunctions, 
+                lossFunction: ILossFunction.LossType.LogisticLoss
+            );
+
+        print(Network.Instance.NeuralNetwork);
+
+        SceneManager.LoadScene("LogRegression");
     }
 
     // Update is called once per frame
