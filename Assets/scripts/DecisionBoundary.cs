@@ -11,12 +11,13 @@ public class DecisionBoundary : MonoBehaviour
     public float Step = 0.01f;
 
     private LineRenderer LineRenderer;
+    public GameObject Plane;
 
     // Start is called before the first frame update
     void Start()
     {
         LineRenderer = GetComponent<LineRenderer>();
-      
+
     }
 
     public void DrawDecisionBoundary(float w1, float w2, float b)
@@ -30,7 +31,7 @@ public class DecisionBoundary : MonoBehaviour
         LineRenderer.SetPosition(1, new Vector3(MaxX, y, -1f));
     }
 
-    public void DrawDecisionBoundary(NeuralNetwork netrowk)
+    public void DrawDecisionBoundary(NeuralNetwork network)
     {
         //max x = 3.45
         //min x = -3.35
@@ -44,10 +45,10 @@ public class DecisionBoundary : MonoBehaviour
         {
            for (float j = -1.4f; j <= 1.45f; j+=Step)
            {
-                var output = netrowk.FeedForward(i, j);
+                var output = network.FeedForward(i, j);
                 tmp += $"({i};{j})={output}\t";
 
-                if (Mathf.Abs(output - 0.5f) < 0.003f)
+                if (Mathf.Abs(output - 0.5f) < 0.05f)
                 {
                     points.Add(new Vector3(i, j, -1.5f));
                 }
@@ -57,5 +58,34 @@ public class DecisionBoundary : MonoBehaviour
         //Debug.Log(tmp);
         LineRenderer.positionCount = points.Count;
         LineRenderer.SetPositions(points.ToArray());
+    }
+
+    public void DrawDecisionBoundaryWithText(NeuralNetwork network)
+    {
+        var texture = new Texture2D(100, 100);
+
+        for (float i = -3.35f; i <= 3.45f; i += Step)
+        {
+            for (float j = -1.4f; j <= 1.45f; j += Step)
+            {
+                var x = Mathf.LerpUnclamped(-3.35f, 3.45f, i);
+                var y = Mathf.LerpUnclamped(-1.4f, 1.45f, j);
+
+                print(x + " " + y);
+            }
+        }
+
+        for (int i = 0; i < 100; i++)
+        {
+            for (int j = 0; j < 100; j++)
+            {
+                var output = network.FeedForward(i, j);
+                var color = new Color(Mathf.Lerp(0, 1, output), 0, Mathf.Lerp(1, 0, output));
+                //texture.SetPixel(i, j, new Color(1, 0, 0, 1f));
+            }
+        }
+        texture.Apply();
+        
+        Plane.GetComponent<Renderer>().material.mainTexture = texture;
     }
 }

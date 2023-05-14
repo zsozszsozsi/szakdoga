@@ -58,7 +58,7 @@ public class LogRegression : MonoBehaviour
 
         network = new NeuralNetwork(2, new int[] { 1 }, new IActivationFunction.FunctionType[] { IActivationFunction.FunctionType.Sigmoid }, ILossFunction.LossType.LogisticLoss);
         //Debug.Log(network);
-        DecisionBoundary.DrawDecisionBoundary(network);
+        //DecisionBoundary.DrawDecisionBoundary(network);
     }
 
 
@@ -160,7 +160,7 @@ public class LogRegression : MonoBehaviour
             if(Network.Instance.NeuralNetwork != null)
             {
                 Network.Instance.NeuralNetwork.Learn(100, SamplesForNetwork);
-                
+                DecisionBoundary.DrawDecisionBoundaryWithText(Network.Instance.NeuralNetwork);
             }
             else
             {
