@@ -6,7 +6,8 @@ public class Unit
 {
     public float[] Weights { get; set; }
     public float Bias { get; set; }
-    public float[] Gradients { get; set; }
+
+    public float PrevGradient;
     public float Grad;
 
     public IActivationFunction Activation { get; private set; }
@@ -15,15 +16,8 @@ public class Unit
     {
         this.Weights = new float[weightsCount];
         this.Activation = activation;
-        this.Gradients = new float[weightsCount+1]; // stores all the gradients bias + weights
 
         Randomize();
-
-        for(int i = 0; i < weightsCount; i++)
-        {
-            //Debug.Log("weight: " + Weights[i]);
-        }
-        //Debug.Log("Bias: " + Bias);
     }
 
     private void Randomize()

@@ -59,6 +59,7 @@ public class LogRegression : MonoBehaviour
         network = new NeuralNetwork(2, new int[] { 1 }, new IActivationFunction.FunctionType[] { IActivationFunction.FunctionType.Sigmoid }, ILossFunction.LossType.LogisticLoss);
         //Debug.Log(network);
         //DecisionBoundary.DrawDecisionBoundary(network);
+        DecisionBoundary.DrawDecisionBoundaryWithText(Network.Instance.NeuralNetwork);
     }
 
 
@@ -117,11 +118,11 @@ public class LogRegression : MonoBehaviour
                 {
                     hit.point = new Vector3(hit.point.x, hit.point.y, -1);
 
-                    //var go = Instantiate(RedSample, hit.point, Quaternion.identity, Spawner.transform);
+                    var go = Instantiate(RedSample, hit.point, Quaternion.identity, Spawner.transform);
 
-                    //RedCount++;
-                    //Samples.Add(go);
-                    //SamplesForNetwork.Add(new List<float> {go.GetComponent<LabelManager>().Label, go.transform.position.x, go.transform.position.y});
+                    RedCount++;
+                    Samples.Add(go);
+                    SamplesForNetwork.Add(new List<float> {go.GetComponent<LabelManager>().Label, go.transform.position.x, go.transform.position.y});
                 }
             }
 
@@ -139,11 +140,11 @@ public class LogRegression : MonoBehaviour
                 {
                     hit.point = new Vector3(hit.point.x, hit.point.y, -1);
 
-                    //var go = Instantiate(BlueSample, hit.point, Quaternion.identity, Spawner.transform);
+                    var go = Instantiate(BlueSample, hit.point, Quaternion.identity, Spawner.transform);
 
-                    //BlueCount++;
-                    //Samples.Add(go);
-                    //SamplesForNetwork.Add(new List<float> { go.GetComponent<LabelManager>().Label, go.transform.position.x, go.transform.position.y });
+                    BlueCount++;
+                    Samples.Add(go);
+                    SamplesForNetwork.Add(new List<float> { go.GetComponent<LabelManager>().Label, go.transform.position.x, go.transform.position.y });
                 }
                 
             }

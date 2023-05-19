@@ -12,12 +12,17 @@ public class DecisionBoundary : MonoBehaviour
 
     private LineRenderer LineRenderer;
     public GameObject Plane;
+    private Texture2D Texture;
 
     // Start is called before the first frame update
     void Start()
     {
         LineRenderer = GetComponent<LineRenderer>();
+        int width = 30;
+        int height = Mathf.CeilToInt(width * (Plane.transform.localScale.y / Plane.transform.localScale.x));
+        Texture = new Texture2D(width, height);
 
+        Plane.GetComponent<Renderer>().material.mainTexture = Texture;
     }
 
     public void DrawDecisionBoundary(float w1, float w2, float b)
@@ -62,30 +67,20 @@ public class DecisionBoundary : MonoBehaviour
 
     public void DrawDecisionBoundaryWithText(NeuralNetwork network)
     {
-        var texture = new Texture2D(100, 100);
-
         for (float i = -3.35f; i <= 3.45f; i += Step)
         {
             for (float j = -1.4f; j <= 1.45f; j += Step)
             {
-                var x = Mathf.LerpUnclamped(-3.35f, 3.45f, i);
-                var y = Mathf.LerpUnclamped(-1.4f, 1.45f, j);
-
-                print(x + " " + y);
-            }
-        }
-
-        for (int i = 0; i < 100; i++)
-        {
-            for (int j = 0; j < 100; j++)
-            {
+                var x = Mathf.CeilToInt((i - -3.35f) / (3.45f - -3.35f) * Texture.width);
+                var y = Mathf.CeilToInt((j - -1.4f) / (1.45f - -1.4f) * Texture.height);
+                
                 var output = network.FeedForward(i, j);
                 var color = new Color(Mathf.Lerp(0, 1, output), 0, Mathf.Lerp(1, 0, output));
-                //texture.SetPixel(i, j, new Color(1, 0, 0, 1f));
+                Texture.SetPixel(Texture.width - x, Texture.height - y, color);
             }
         }
-        texture.Apply();
-        
-        Plane.GetComponent<Renderer>().material.mainTexture = texture;
+
+        Texture.Apply();
+
     }
 }

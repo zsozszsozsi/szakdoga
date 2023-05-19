@@ -77,7 +77,7 @@ public class NeuralNetwork
         return loss;
     }
 
-    public void Train(List<List<float>> samples, float lr = 0.001f)
+    public void Train(List<List<float>> samples, float lr = 0.001f, float momentum = 0.4f)
     {
         for(int i = 0; i < samples.Count; i++)
         {
@@ -114,6 +114,7 @@ public class NeuralNetwork
                 foreach(var unit in layer.Units)
                 {
                     unit.Bias += lr * unit.Grad * 1;
+                    unit.Bias += momentum * unit.PrevGradient;
 
                     for (int k = 0; k < unit.Weights.Length; k++)
                     {
@@ -124,7 +125,9 @@ public class NeuralNetwork
                         }
 
                         unit.Weights[k] += lr * unit.Grad * Layers[j-1].Outputs[k];
+                        unit.Weights[k] += momentum * unit.Grad;
                     }
+                    unit.PrevGradient = unit.Grad;
                 }
             }
         }
