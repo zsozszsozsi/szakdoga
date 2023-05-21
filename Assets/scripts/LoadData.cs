@@ -5,7 +5,7 @@ using UnityEngine.UI;
 using UnityEditor;
 using System.Linq;
 using System.Globalization;
-
+using SmartDLL;
 
 public class LoadData : MonoBehaviour
 {
@@ -35,8 +35,24 @@ public class LoadData : MonoBehaviour
         new Color32(252,  58,  65, 255)  // 9
     };
 
+    public SmartFileExplorer fileExplorer = new SmartFileExplorer();
+
+    void ShowExplorer()
+    {
+        string initialDir = @"C:\";
+        bool restoreDir = true;
+        string title = "Open a Text File";
+        string defExt = "txt";
+        string filter = "txt files (*.txt)|*.txt";
+
+        fileExplorer.OpenExplorer(initialDir, restoreDir, title, defExt, filter);
+    }
+
     public void TestBtn()
     {
+        ShowExplorer();
+        string filePath = fileExplorer.fileName;
+        print(filePath);
         var path = EditorUtility.OpenFilePanel("Open csv", "", "csv");
         var stringData = System.IO.File.ReadAllText(path);
         List<string> lines = stringData.Split("\n").ToList();
