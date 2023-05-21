@@ -6,8 +6,11 @@ using UnityEngine;
 using UnityEngine.UI;
 
 
-public class LogRegression : MonoBehaviour
+public class Simulator : MonoBehaviour
 {
+    public static Simulator Instance;
+
+    [HideInInspector]
     public bool IsLearning = false;
 
     private int BlueCount;
@@ -30,11 +33,11 @@ public class LogRegression : MonoBehaviour
     public GameObject DecisionBoundaryGO;
     private DecisionBoundary DecisionBoundary;
 
-    private float MaxX = 2.6f;
-    private float MinX = -2.6f;
+    public float MaxX = 2.6f;
+    public float MinX = -2.6f;
 
-    private float MaxY = 1.27f;
-    private float MinY = -1.27f;
+    public float MaxY = 1.27f;
+    public float MinY = -1.27f;
 
     private float[] weigths = new float[2];
     private float[] biases = new float[1];
@@ -44,6 +47,18 @@ public class LogRegression : MonoBehaviour
     public float w_1;
 
     private NeuralNetwork network;
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(this);
+        }
+        else
+        {
+            Instance = this;
+        }
+    }
 
     private void Start()
     {

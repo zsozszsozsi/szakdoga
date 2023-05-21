@@ -286,7 +286,7 @@ public class Controller : MonoBehaviour
 
         print(Network.Instance.NeuralNetwork);
 
-        SceneManager.LoadScene("LogRegression");
+        SceneManager.LoadScene("Simulator");
     }
 
     // Update is called once per frame

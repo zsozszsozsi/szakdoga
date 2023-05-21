@@ -37,7 +37,6 @@ public class LoadData : MonoBehaviour
 
     public void TestBtn()
     {
-
         var path = EditorUtility.OpenFilePanel("Open csv", "", "csv");
         var stringData = System.IO.File.ReadAllText(path);
         List<string> lines = stringData.Split("\n").ToList();
