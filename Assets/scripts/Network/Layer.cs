@@ -10,7 +10,6 @@ public class Layer
     public List<Unit> Units { get; private set; }
 
     public float[] Outputs { get; private set; }
-    public float[] DesiredOutput { get; set; }
 
 
     public Layer(int inCount, int unitCount, IActivationFunction.FunctionType actFunction)
@@ -21,7 +20,6 @@ public class Layer
         this.UnitCount = unitCount;
 
         Outputs = new float[unitCount];
-        DesiredOutput = new float[unitCount];
 
         for (int i = 0; i < unitCount; i++)
         {
@@ -52,7 +50,6 @@ public class Layer
         for(int i = 0; i < Units.Count; i++)
         {
             Outputs[i] = Units[i].CalcOutput(inputs);
-            DesiredOutput[i] = Outputs[i];
         }
     }
 }

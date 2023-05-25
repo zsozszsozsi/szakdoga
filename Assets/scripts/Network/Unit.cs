@@ -16,16 +16,28 @@ public class Unit
     {
         this.Weights = new float[weightsCount];
         this.Activation = activation;
+        this.Grad = 0;
+        this.PrevGradient = 0;
 
-        Randomize();
     }
 
-    private void Randomize()
+    public void InitWeights(int outCount)
     {
-        for(int i = 0; i < Weights.Length; i++)
+        if(Activation is ReLu or Linear)
         {
-            Weights[i] = Random.value;
+            for (int i = 0; i < Weights.Length; i++)
+            {
+                Weights[i] = Random.value * Mathf.Sqrt(2f / Weights.Length);
+            }
         }
+        if (Activation is Sigmoid or TanH)
+        {
+            for (int i = 0; i < Weights.Length; i++)
+            {
+                Weights[i] = Random.value * Mathf.Sqrt(6f / (Weights.Length + outCount));
+            }
+        }
+        
 
         Bias = 0f;
     }

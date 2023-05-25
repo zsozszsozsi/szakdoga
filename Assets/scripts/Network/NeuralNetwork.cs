@@ -24,14 +24,37 @@ public class NeuralNetwork
                 break;
         }
 
+        InitializeLayers(featureCount, layerSizes, actFunctions);
+
+        InitializeWeights();
+    }
+
+    private void InitializeLayers(int featureCount, int[] layerSizes, IActivationFunction.FunctionType[] actFunctions)
+    {
         Layers = new List<Layer>();
 
         for (int i = 0; i < layerSizes.Length; i++)
         {
-            if (i == 0) 
+            if (i == 0)
                 Layers.Add(new Layer(featureCount, layerSizes[i], actFunctions[i]));
             else
                 Layers.Add(new Layer(Layers[^1].UnitCount, layerSizes[i], actFunctions[i]));
+        }
+    }
+
+    private void InitializeWeights()
+    {
+        for(int i = 0; i < Layers.Count; i++)
+        {
+            foreach (var unit in Layers[i].Units)
+            {
+                if(i+1 == Layers.Count)
+                {
+                    unit.InitWeights(0);
+                    continue;
+                }
+                unit.InitWeights(Layers[i+1].UnitCount);
+            }
         }
     }
 
@@ -103,6 +126,7 @@ public class NeuralNetwork
                     }
 
                     Layers[j].Units[k].Grad = Layers[j].Units[k].Activation.Derivative(output) * sums;
+
                 }
             }
 
@@ -125,7 +149,7 @@ public class NeuralNetwork
                         }
 
                         unit.Weights[k] += lr * unit.Grad * Layers[j-1].Outputs[k];
-                        unit.Weights[k] += momentum * unit.Grad;
+                        unit.Weights[k] += momentum * unit.PrevGradient;
                     }
                     unit.PrevGradient = unit.Grad;
                 }
@@ -165,7 +189,6 @@ public class NeuralNetwork
             Train(samples);
         }
 
-        Debug.Log("Loss after learning: " + CalculateLoss(samples));
-        //Debug.Log(this);
+        Debug.Log("Loss after learning: " + CalculateLoss(samples) + "\n" + this);
     }
 }

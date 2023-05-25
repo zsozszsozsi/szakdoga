@@ -2,74 +2,110 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-using static Tensorflow.Binding;
+using Tensorflow.Keras.Engine;
+using Tensorflow.Keras.Layers;
 using static Tensorflow.KerasApi;
-using Tensorflow;
-using Tensorflow.NumPy;
 
 public class Test : MonoBehaviour
 {
-    private NDArray X;
-    private NDArray Y;
-    private ResourceVariable W;
-    private ResourceVariable b;
-    private Tensorflow.Keras.Optimizers.SGD optimizer;
+    Fnn fnn = new();
 
-    private long n_samples;
-
-    // Start is called before the first frame update
-    void Start()
+    public void Start()
     {
-        var learning_rate = 0.01f;
-
-        // Sample data
-        X = np.array(3.3f, 4.4f, 5.5f, 6.71f, 6.93f, 4.168f, 9.779f, 6.182f, 7.59f, 2.167f,
-                     7.042f, 10.791f, 5.313f, 7.997f, 5.654f, 9.27f, 3.1f);
-        Y = np.array(1.7f, 2.76f, 2.09f, 3.19f, 1.694f, 1.573f, 3.366f, 2.596f, 2.53f, 1.221f,
-                     2.827f, 3.465f, 1.65f, 2.904f, 2.42f, 2.94f, 1.3f);
-        n_samples = X.shape[0];
-
-        // We can set a fixed init value in order to demo
-        W = tf.Variable(-0.06f, name: "weight");
-        b = tf.Variable(-0.73f, name: "bias");
-        optimizer = keras.optimizers.SGD(learning_rate);
+        fnn.PrepareData();
+        fnn.BuildModel();
     }
 
-    private int step = 0;
-    private float time = 0f;
-
-    // Update is called once per frame
-    void Update()
+    float time = 0f;
+    float counter = 0f;
+    private void Update()
     {
         time += Time.deltaTime;
-        if (time > 0.01)
+        
+        if(time > 0.5f && counter < 10)
         {
             time = 0f;
-            // Parameters           
-            var display_step = 100;
 
-            // Run the optimization to update W and b values.
-            // Wrap computation inside a GradientTape for automatic differentiation.
-            using var g = tf.GradientTape();
-            // Linear regression (Wx + b).
-            var pred = W * X + b;
-            // Mean square error.
-            var loss = tf.reduce_sum(tf.pow(pred - Y, 2)) / (2 * n_samples);
-            // should stop recording
-            // Compute gradients.
-            var gradients = g.gradient(loss, (W, b));
+            fnn.Train();
+            counter++;
+        }
 
-            // Update W and b following gradients.
-            optimizer.apply_gradients(zip(gradients, (W, b)));
+        if(counter == 10 && time > 0.5f)
+        {
+            time = 0f;
+            var idx = Mathf.RoundToInt(Random.Range(0, fnn.y_test.size));
+            fnn.Test(idx);
+        }
+    }
+}
 
-            step++;
+public class Fnn
+{
+    public Model model;
+    public Tensorflow.NumPy.NDArray x_train, y_train, x_test, y_test;
 
-            if (step % display_step == 0)
+    public void PrepareData()
+    {
+        (x_train, y_train, x_test, y_test) = keras.datasets.mnist.load_data();
+        x_train = x_train.reshape((60000, 784))[$":1000"] / 255f;
+        x_test = x_test.reshape((10000, 784))[":100"] / 255f;
+
+        y_train = y_train[":1000"];
+        y_test = y_test[":100"];
+    }
+
+    public void BuildModel()
+    {
+        var inputs = keras.Input(shape: 784);
+
+        var layers = new LayersApi();
+
+        var outputs = layers.Dense(64, activation: keras.activations.Relu).Apply(inputs);
+        outputs = layers.Dense(10, activation: keras.activations.Softmax).Apply(outputs);
+
+        model = keras.Model(inputs, outputs, name: "mnist_model");
+        model.summary();
+
+        model.compile(loss: keras.losses.SparseCategoricalCrossentropy(from_logits: true),
+            optimizer: keras.optimizers.Adam(),
+            metrics: new[] { "accuracy" });
+    }
+
+    public void Train()
+    {
+        var history = model.fit(x_train, y_train, batch_size: 64, epochs: 1).history;
+        //model.evaluate(x_test, y_test, return_dict: true);
+
+        foreach(var item in history)
+        {
+            string s = item.Key + ": ";
+            foreach(var loss in item.Value)
             {
-                pred = W * X + b;
-                loss = tf.reduce_sum(tf.pow(pred - Y, 2)) / (2 * n_samples);
-                print($"step: {step}, loss: {loss.numpy()}, W: {W.numpy()}, b: {b.numpy()}");
+                s += loss + " ,";
+            }
+            s = s[..^1];
+            Debug.Log(s);
+        }
+    }
+
+    public void Test(int predIdx)
+    {
+        var predTensors = model.predict(x_test[predIdx].reshape((1, -1)));
+        var pred = predTensors[0].numpy().reshape(-1);
+
+        float max = pred[0];
+        int maxId = 0;
+
+        for (int i = 1; i < 10; i++)
+        {
+            if (pred[i] > max)
+            {
+                max = pred[i];
+                maxId = i;
             }
         }
+
+        Debug.Log($"Predicted value: {maxId}, true val: {y_test[predIdx]}");
+        
     }
 }

@@ -273,8 +273,9 @@ public class Controller : MonoBehaviour
         for(int i = 1; i < NeuralNetwork.transform.childCount; i++)
         {
             layerSizes[i - 1] = NeuralNetwork.transform.GetChild(i).childCount - 1;
-            actFunctions[i - 1] = IActivationFunction.FunctionType.Sigmoid;
+            actFunctions[i - 1] = IActivationFunction.FunctionType.ReLu;
         }
+        actFunctions[^1] = IActivationFunction.FunctionType.Sigmoid;
 
         Network.Instance.NeuralNetwork = 
             new NeuralNetwork(
