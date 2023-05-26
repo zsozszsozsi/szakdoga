@@ -20,8 +20,8 @@ public class DecisionBoundary : MonoBehaviour
         Simulator = Simulator.Instance;
 
         LineRenderer = GetComponent<LineRenderer>();
-        int width = 10;
-        int height = Mathf.CeilToInt(width * (Plane.transform.localScale.y / Plane.transform.localScale.x));
+        int height = 10;
+        int width = Mathf.CeilToInt(height * (Plane.transform.localScale.y / Plane.transform.localScale.x));
         Texture = new Texture2D(width, height);
 
         Plane.GetComponent<Renderer>().material.mainTexture = Texture;
