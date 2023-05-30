@@ -7,8 +7,8 @@ public class Unit
     public float[] Weights { get; set; }
     public float Bias { get; set; }
 
-    public float PrevGradient;
     public float Grad;
+    public float GradSum;
 
     public IActivationFunction Activation { get; private set; }
 
@@ -17,25 +17,16 @@ public class Unit
         this.Weights = new float[weightsCount];
         this.Activation = activation;
         this.Grad = 0;
-        this.PrevGradient = 0;
+        this.GradSum = 0;
 
     }
 
-    public void InitWeights(int outCount)
+    public void InitWeights(int outCount = 0)
     {
-        if(Activation is ReLu or Linear)
+        for (int i = 0; i < Weights.Length; i++)
         {
-            for (int i = 0; i < Weights.Length; i++)
-            {
-                Weights[i] = Random.value * Mathf.Sqrt(2f / Weights.Length);
-            }
-        }
-        if (Activation is Sigmoid or TanH)
-        {
-            for (int i = 0; i < Weights.Length; i++)
-            {
-                Weights[i] = Random.value * Mathf.Sqrt(6f / (Weights.Length + outCount));
-            }
+            var sd = Mathf.Sqrt(2f / (Weights.Length + outCount));
+            Weights[i] = Random.value * sd;
         }
         
 

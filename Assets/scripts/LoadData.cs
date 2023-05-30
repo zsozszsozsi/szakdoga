@@ -51,6 +51,7 @@ public class LoadData : MonoBehaviour
     public void TestBtn()
     {
         ShowExplorer();
+        print(fileExplorer.filePath);
         string filePath = fileExplorer.fileName;
         print(filePath);
         var path = EditorUtility.OpenFilePanel("Open csv", "", "csv");

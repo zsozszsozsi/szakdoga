@@ -805,10 +805,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7bfd0c983616d5a408e1cd68816e9c9a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  MinX: -4.5
-  MaxX: 4.5
-  MinY: 0
-  MaxY: 0
   Step: 0.01
   Plane: {fileID: 0}
 --- !u!120 &405230870
@@ -1054,10 +1050,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7bfd0c983616d5a408e1cd68816e9c9a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  MinX: -2.7
-  MaxX: 2.7
-  MinY: -1.45
-  MaxY: 1.45
   Step: 0.1
   Plane: {fileID: 1966252838}
 --- !u!1 &454044068
@@ -2206,7 +2198,7 @@ MonoBehaviour:
   b_0: 0
   w_0: 0
   w_1: 0
-  cd: 0.5
+  cd: 0
   lr: 0.001
 --- !u!114 &883308636
 MonoBehaviour:
@@ -2220,14 +2212,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e04e683e49f704469418be144549155, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  MinX: -3
-  MaxX: 3.25
-  MinY: -1.4
-  MaxY: 1.25
   Step: 0.3
   RedSample: {fileID: 2135691138183217004, guid: 1da15aec8931c684bac5ab221b65df95, type: 3}
   BlueSample: {fileID: 5482848003558448338, guid: 3a0c8d62063ffff4cb499803c36eba15, type: 3}
-  SampleParent: {fileID: 405230866}
   Btn1: {fileID: 252856101}
   Btn2: {fileID: 1746303242}
   Btn3: {fileID: 1541886369}

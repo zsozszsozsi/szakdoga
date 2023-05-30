@@ -175,7 +175,7 @@ public class Simulator : MonoBehaviour
             
             if(Network.Instance.NeuralNetwork != null)
             {
-                Network.Instance.NeuralNetwork.Learn(100, SamplesForNetwork);
+                Network.Instance.NeuralNetwork.Learn(50, SamplesForNetwork);
                 DecisionBoundary.DrawDecisionBoundaryWithText(Network.Instance.NeuralNetwork);
             }
             else

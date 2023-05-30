@@ -1,22 +1,23 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Sigmoid : IActivationFunction
+public class LeakyReLu : IActivationFunction
 {
+    private float alpha = 0.01f;
 
     float IActivationFunction.Func(float z)
     {
-        return 1 / (1 + Mathf.Exp(-z));
+        return z > 0 ? z : alpha * z;
     }
 
     float IActivationFunction.Derivative(float z)
     {
-        return z * (1 - z);
+        return z > 0 ? 1 : alpha;
     }
 
     string IActivationFunction.ToString()
     {
-        return "Sigmoid";
+        return "Leaky_ReLu";
     }
 }

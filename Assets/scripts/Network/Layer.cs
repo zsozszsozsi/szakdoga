@@ -10,6 +10,7 @@ public class Layer
     public List<Unit> Units { get; private set; }
 
     public float[] Outputs { get; private set; }
+    public float[] OutputSums { get; private set; }
 
 
     public Layer(int inCount, int unitCount, IActivationFunction.FunctionType actFunction)
@@ -20,26 +21,11 @@ public class Layer
         this.UnitCount = unitCount;
 
         Outputs = new float[unitCount];
+        OutputSums = new float[unitCount];
 
         for (int i = 0; i < unitCount; i++)
         {
-            IActivationFunction activation;
-
-            switch (actFunction)
-            {
-                case IActivationFunction.FunctionType.Sigmoid:
-                    activation = new Sigmoid();
-                    break;
-                case IActivationFunction.FunctionType.ReLu:
-                    activation = new ReLu();
-                    break;
-                case IActivationFunction.FunctionType.TanH:
-                    activation = new TanH();
-                    break;
-                default:
-                    activation = new Linear();
-                    break;
-            }
+            IActivationFunction activation = ActivationFunctionFactory.Instance.GetActivation(actFunction);
 
             Units.Add(new Unit(inCount, activation));
         }
@@ -50,6 +36,7 @@ public class Layer
         for(int i = 0; i < Units.Count; i++)
         {
             Outputs[i] = Units[i].CalcOutput(inputs);
+            OutputSums[i] += Outputs[i];
         }
     }
 }

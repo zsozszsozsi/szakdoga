@@ -6,7 +6,7 @@ public class TanH : IActivationFunction
 {
     float IActivationFunction.Derivative(float z)
     {
-        return (1 - z) * (1 + z);
+        return 1 - Mathf.Pow(z, 2);
     }
 
     float IActivationFunction.Func(float z)
