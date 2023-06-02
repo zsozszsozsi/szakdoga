@@ -9,11 +9,12 @@ using static Tensorflow.KerasApi;
 public class Test : MonoBehaviour
 {
     Fnn fnn = new();
+    LeNet5 cnn = new();
 
     public void Start()
     {
-        fnn.PrepareData();
-        fnn.BuildModel();
+        //fnn.PrepareData();
+        //fnn.BuildModel();
     }
 
     float time = 0f;
@@ -26,7 +27,7 @@ public class Test : MonoBehaviour
         {
             time = 0f;
 
-            fnn.Train();
+            cnn.Train();
             counter++;
         }
 
@@ -34,9 +35,74 @@ public class Test : MonoBehaviour
         {
             time = 0f;
             var idx = Mathf.RoundToInt(Random.Range(0, fnn.y_test.size));
-            fnn.Test(idx);
+            //fnn.Test(idx);
         }
     }
+}
+
+public class LeNet5
+{
+    public Model model;
+    public Tensorflow.NumPy.NDArray x_train, y_train, x_test, y_test;
+
+    public LeNet5()
+    {
+        PrepareData();
+        BuildModel();
+    }
+
+    public void PrepareData()
+    {
+        (x_train, y_train, x_test, y_test) = keras.datasets.mnist.load_data();
+        x_train = x_train.reshape((x_train.shape[0], x_train.shape[1], x_train.shape[2], 1))[$":1000"] / 255f; // shape: {60000, 28,28} -> {60000, 28,28, 1}
+        x_test = x_test.reshape((x_test.shape[0], x_test.shape[1], x_test.shape[2], 1))[":100"] / 255f;
+
+        y_train = y_train[":1000"];
+        y_test = y_test[":100"];
+    }
+
+    public void BuildModel()
+    {
+        var inputs = keras.Input(shape: (28, 28, 1));
+
+        var layers = new LayersApi();
+
+        var outputs = layers.Conv2D(filters: 6, kernel_size: (5, 5), activation: keras.activations.Relu)
+            .Apply(inputs);
+        outputs = layers.MaxPooling2D(pool_size: (2, 2)).Apply(outputs);
+
+        outputs = layers.Conv2D(filters: 16, kernel_size: (5, 5), activation: keras.activations.Relu)
+            .Apply(outputs);
+        outputs = layers.MaxPooling2D(pool_size: (2, 2)).Apply(outputs);
+
+        outputs = layers.Flatten().Apply(outputs);
+        outputs = layers.Dense(120, activation: keras.activations.Relu).Apply(outputs);
+        outputs = layers.Dense(10, activation: keras.activations.Softmax).Apply(outputs);
+
+        model = keras.Model(inputs, outputs, name: "mnist_model_LeNet5");
+        model.summary();
+
+        model.compile(loss: keras.losses.SparseCategoricalCrossentropy(from_logits: true),
+            optimizer: keras.optimizers.Adam(),
+            metrics: new[] { "accuracy" });
+    }
+
+    public void Train()
+    {
+        var history = model.fit(x_train, y_train, batch_size: 64, epochs: 1).history;
+
+        foreach (var item in history)
+        {
+            string s = item.Key + ": ";
+            foreach (var loss in item.Value)
+            {
+                s += loss + " ,";
+            }
+            s = s[..^1];
+            Debug.Log(s);
+        }
+    }
+
 }
 
 public class Fnn

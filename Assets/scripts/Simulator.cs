@@ -79,7 +79,7 @@ public class Simulator : MonoBehaviour
 
 
     [Range(0, 1)] public float cd = 0.5f;
-    [Range(0.001f, 1)] public float lr = 0.001f;
+    [Range(0.00001f, 1)] public float lr = 0.001f;
     private float t = 0f;
 
     // Update is called once per frame
@@ -223,6 +223,7 @@ public class Simulator : MonoBehaviour
     {
         IsLearning = !IsLearning;
         LearnBtn.GetComponentInChildren<Text>().text = IsLearning ? "Stop Learning!": "Start Learning!";
+        //SamplesForNetwork = Network.Instance.NeuralNetwork.Standardization(SamplesForNetwork);
     }
 
     private float Sigmoid(float x)

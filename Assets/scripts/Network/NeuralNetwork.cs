@@ -9,10 +9,12 @@ public class NeuralNetwork
     private ILossFunction LossFunction;
     private System.Random random;
     private List<float> Losses;
+    private int FeatureCount;
+    private int LabelCount;
 
     public NeuralNetwork(int featureCount, int[] layerSizes, IActivationFunction.FunctionType[] actFunctions, ILossFunction.LossType lossFunction)
     {
-        
+        FeatureCount = featureCount;
         Losses = new List<float>();
 
         random = new System.Random(System.DateTime.Now.Millisecond);
@@ -31,6 +33,8 @@ public class NeuralNetwork
         InitializeLayers(featureCount, layerSizes, actFunctions);
 
         InitializeWeights();
+
+        LabelCount = Layers[^1].UnitCount;
     }
 
     private void InitializeLayers(int featureCount, int[] layerSizes, IActivationFunction.FunctionType[] actFunctions)
@@ -106,7 +110,7 @@ public class NeuralNetwork
 
     public void Train(List<List<float>> samples, float lr = 0.001f, float momentum = 0.4f)
     {
-        List<float> inputSums = new(new float[samples[0].Count - Layers[^1].UnitCount]); // sample {0, 12, 32} -> {label, x, y} -> label is as long as the last layer unit count
+        List<float> inputSums = new(new float[samples[0].Count - Layers[^1].UnitCount]); // samples[0]: {0, 12, 32} -> {label, x, y} -> label is as long as the last layer unit count
 
         for(int i = 0; i < samples.Count; i++)
         {
@@ -118,7 +122,7 @@ public class NeuralNetwork
                 var output = Layers[^1].Outputs[j];
                 //Layers[^1].Units[j].Grad = Layers[^1].Units[j].Activation.Derivative(output) * LossFunction.Loss(output, samples[i][j]);
                 Layers[^1].Units[j].Grad = Layers[^1].Units[j].Activation.Derivative(output) * (samples[i][j] - output);
-                Layers[^1].Units[j].GradSum += Layers[^1].Units[j].Grad;
+                //Layers[^1].Units[j].GradSum += Layers[^1].Units[j].Grad;
             }
 
             //Calculates the hidden layers gradients
@@ -134,44 +138,68 @@ public class NeuralNetwork
                     }
 
                     Layers[j].Units[k].Grad = Layers[j].Units[k].Activation.Derivative(output) * sums;
-                    Layers[j].Units[k].GradSum += Layers[j].Units[k].Grad;
+                    //Layers[j].Units[k].GradSum += Layers[j].Units[k].Grad;
 
                 }
             }
 
-            foreach(var unit in Layers[0].Units)
+            /*foreach(var unit in Layers[0].Units)
             {
                 for(int j = 0; j < unit.Weights.Length; j++)
                 {
                     inputSums[j] += samples[i][j + Layers[^1].UnitCount];
                 }
+            }*/
+
+            for (int j = 0; j < Layers.Count; j++)
+            {
+                var layer = Layers[j];
+
+                foreach (var unit in layer.Units)
+                {
+                    unit.Bias += lr * unit.Grad * 1;
+
+                    for (int k = 0; k < unit.Weights.Length; k++)
+                    {
+                        if (j == 0)
+                        {
+                            // the first layes has feature count weights
+                            unit.Weights[k] += lr * unit.Grad * samples[i][k + Layers[^1].UnitCount]; // we need to add the output layers unit count because the first elems in samples are the true labels
+                            continue;
+                        }
+
+                        unit.Weights[k] += lr * unit.Grad * Layers[j - 1].Outputs[k];
+                    }
+
+
+                }
             }
         }
 
-        //Update weights and biases
+        /*//Update weights and biases
         for (int j = 0; j < Layers.Count; j++)
         {
             var layer = Layers[j];
 
             foreach (var unit in layer.Units)
             {
-                unit.Bias += lr * (unit.GradSum / samples.Count) * 1;
+                unit.Bias -= lr * (unit.GradSum / samples.Count) * 1;
 
                 for (int k = 0; k < unit.Weights.Length; k++)
                 {
                     if (j == 0)
                     {
                         // the first layes has feature count weights
-                        unit.Weights[k] += lr * (unit.GradSum / samples.Count) * (inputSums[k] / samples.Count); // we need to add the output layers unit count because the first elems in samples are the true labels
+                        unit.Weights[k] -= lr * (unit.GradSum / samples.Count) * (inputSums[k] / samples.Count); // we need to add the output layers unit count because the first elems in samples are the true labels
                         continue;
                     }
 
-                    unit.Weights[k] += lr * (unit.GradSum / samples.Count) * (Layers[j - 1].OutputSums[k] / samples.Count);
+                    unit.Weights[k] -= lr * (unit.GradSum / samples.Count) * (Layers[j - 1].OutputSums[k] / samples.Count);
                 }
 
                 
             }
-        }
+        }*/
 
     }
 
@@ -183,11 +211,21 @@ public class NeuralNetwork
         {
             var layer = Layers[i];
             s += $"Layer{i}: (Activation type : {layer.Units[0].Activation})\n";
-            for(int j = 0; j < layer.Units.Count; j++)
+            
+            s += $"\t Outputs = [ ";
+            foreach (var output in layer.Outputs)
+            {
+                s += $"{output}; ";
+            }
+            s = $"{s[..^2]} ]\n";
+
+            for (int j = 0; j < layer.Units.Count; j++)
             {
                 var unit = layer.Units[j];
-                s += $"Grad: {unit.Grad} Output: {layer.Outputs[j]} \n\tBias: {unit.Bias}, Weigths = [ ";
-                foreach(var weight in unit.Weights)
+                s += $"\tGrad: {unit.Grad}";
+
+                s += $"\tBias: {unit.Bias}, Weigths = [ ";
+                foreach (var weight in unit.Weights)
                 {
                     s += $"{weight}; ";
                 }
@@ -202,6 +240,8 @@ public class NeuralNetwork
     {
         //samples = samples.OrderBy(x => random.Next()).Take(Mathf.Min(batchSize, samples.Count)).ToList();
 
+        //samples = Standardization(samples);
+
         for (int i= 0; i < epochs; i++)
         {
             Train(samples);
@@ -210,5 +250,63 @@ public class NeuralNetwork
         var loss = CalculateLoss(samples);
         Losses.Add(loss);
         Debug.Log("Loss after learning: " + loss + "\n" + this);
+    }
+
+    public List<List<float>> Standardization(List<List<float>> samples)
+    {
+        List<float> means = GetMeans(samples);
+        List<float> devs = GetDeviation(samples, means);
+
+        foreach(var sample in samples)
+        {
+            for(int i = LabelCount; i < sample.Count; i++)
+            {
+                sample[i] = (sample[i] - means[i - LabelCount]) / devs[i - LabelCount];
+            }
+        }
+        
+
+        return samples;
+    }
+
+    private List<float> GetMeans(List<List<float>> samples)
+    {
+        List<float> means = new(new float[FeatureCount]);
+
+        for (int i = 0; i < samples.Count; i++)
+        {
+            for (int j = LabelCount; j < samples[i].Count; j++)
+            {
+                means[j - LabelCount] += samples[i][j];
+            }
+        }
+
+        for (int i = 0; i < means.Count; i++)
+        {
+            means[i] /= samples.Count;
+        }
+
+        return means;
+    }
+
+    private List<float> GetDeviation(List<List<float>> samples, List<float> means)
+    {
+        List<float> devs = new(new float[FeatureCount]);
+
+        for (int i = 0; i < samples.Count; i++)
+        {
+            for (int j = LabelCount; j < samples[i].Count; j++)
+            {
+                devs[j - LabelCount] += Mathf.Pow(samples[i][j] - means[j - LabelCount], 2);
+            }
+        }
+
+        for (int i = 0; i < means.Count; i++)
+        {
+            devs[i] /= (samples.Count - 1);
+            devs[i] = Mathf.Sqrt(devs[i]);
+        }
+
+        return devs;
     }
 }
