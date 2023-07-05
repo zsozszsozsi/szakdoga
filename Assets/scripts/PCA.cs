@@ -245,17 +245,13 @@ public class PCA
 
     private void Standardization()
     {
-        //Debug.Log("---Strandardization---");
         for (int row = 0; row < RowCount; row++)
         {
-            //string tmp = row + ": ";
             for (int col = 0; col < ColCount; col++)
             {
                 var Z = (Data[row, col] - Mean[col]) / Deviation[col];
                 Data[row, col] = Z;
-                //tmp += Z + "\t";
             }
-            //Debug.Log(tmp);
         }
         
     }
