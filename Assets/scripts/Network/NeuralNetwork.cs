@@ -12,22 +12,19 @@ public class NeuralNetwork
     private int FeatureCount;
     private int LabelCount;
 
-    public NeuralNetwork(int featureCount, int[] layerSizes, IActivationFunction.FunctionType[] actFunctions, ILossFunction.LossType lossFunction)
+    public NeuralNetwork(int featureCount, int[] layerSizes, ActivationFunctionType[] actFunctions, LossType lossFunction)
     {
         FeatureCount = featureCount;
         Losses = new List<float>();
 
         random = new System.Random(System.DateTime.Now.Millisecond);
 
-        switch (lossFunction)
+        try
         {
-            case ILossFunction.LossType.LogisticLoss:
-                LossFunction = new LogisticLoss();
-                break;
-            case ILossFunction.LossType.MSE:
-                break;
-            default:
-                break;
+            LossFunction = LossFunctionFactory.Instance.GetLossFunction(lossFunction);
+        }catch(System.NotImplementedException ex)
+        {
+            Debug.LogError(ex.Message);
         }
 
         InitializeLayers(featureCount, layerSizes, actFunctions);
@@ -37,7 +34,7 @@ public class NeuralNetwork
         LabelCount = Layers[^1].UnitCount;
     }
 
-    private void InitializeLayers(int featureCount, int[] layerSizes, IActivationFunction.FunctionType[] actFunctions)
+    private void InitializeLayers(int featureCount, int[] layerSizes, ActivationFunctionType[] actFunctions)
     {
         Layers = new List<Layer>();
 

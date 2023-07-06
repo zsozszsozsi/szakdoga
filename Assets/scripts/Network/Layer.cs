@@ -13,7 +13,7 @@ public class Layer
     public float[] OutputSums { get; private set; }
 
 
-    public Layer(int inCount, int unitCount, IActivationFunction.FunctionType actFunction)
+    public Layer(int inCount, int unitCount, ActivationFunctionType actFunction)
     {
         Units = new List<Unit>();
 
@@ -25,9 +25,15 @@ public class Layer
 
         for (int i = 0; i < unitCount; i++)
         {
-            IActivationFunction activation = ActivationFunctionFactory.Instance.GetActivation(actFunction);
+            try
+            {
+                IActivationFunction activation = ActivationFunctionFactory.Instance.GetActivation(actFunction);
+                Units.Add(new Unit(inCount, activation));
+            }catch(System.NotImplementedException ex)
+            {
+                Debug.LogError(ex.Message);
+            }
 
-            Units.Add(new Unit(inCount, activation));
         }
     }
 

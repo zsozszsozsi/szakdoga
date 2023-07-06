@@ -4,17 +4,17 @@ using Tensorflow.Keras;
 using UnityEngine;
 using static UnityEditor.Handles;
 
+public enum ActivationFunctionType
+{
+    Linear,
+    Sigmoid,
+    ReLu,
+    LeakyReLu,
+    TanH
+}
+
 public interface IActivationFunction
 {
-    public enum FunctionType
-    {
-        Linear,
-        Sigmoid,
-        ReLu,
-        LeakyReLu,
-        TanH
-    }
-
     public float Func(float z);
 
     public float Derivative(float z);
@@ -41,26 +41,26 @@ public class ActivationFunctionFactory
         }
     }
 
-    public IActivationFunction GetActivation(IActivationFunction.FunctionType type)
+    public IActivationFunction GetActivation(ActivationFunctionType type)
     {
         IActivationFunction activation;
         switch (type)
         {
-            case IActivationFunction.FunctionType.Sigmoid:
+            case ActivationFunctionType.Sigmoid:
                 activation = new Sigmoid();
                 break;
-            case IActivationFunction.FunctionType.ReLu:
+            case ActivationFunctionType.ReLu:
                 activation = new ReLu();
                 break;
-            case IActivationFunction.FunctionType.TanH:
+            case ActivationFunctionType.TanH:
                 activation = new TanH();
                 break;
-            case IActivationFunction.FunctionType.LeakyReLu:
+            case ActivationFunctionType.LeakyReLu:
                 activation = new LeakyReLu();
                 break;
             default:
                 activation = new Linear();
-                break;
+                throw new System.NotImplementedException("Choosed activation not implemented yet, using Linear function instead.");
         }
 
         return activation;

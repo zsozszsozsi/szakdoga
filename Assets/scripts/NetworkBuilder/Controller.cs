@@ -268,21 +268,21 @@ public class Controller : MonoBehaviour
 
         var featureCount = NeuralNetwork.transform.GetChild(0).childCount;
         int[] layerSizes = new int[NeuralNetwork.transform.childCount - 1];
-        IActivationFunction.FunctionType[] actFunctions = new IActivationFunction.FunctionType[layerSizes.Length];
+        ActivationFunctionType[] actFunctions = new ActivationFunctionType[layerSizes.Length];
 
         for(int i = 1; i < NeuralNetwork.transform.childCount; i++)
         {
             layerSizes[i - 1] = NeuralNetwork.transform.GetChild(i).childCount - 1;
-            actFunctions[i - 1] = IActivationFunction.FunctionType.LeakyReLu;
+            actFunctions[i - 1] = ActivationFunctionType.LeakyReLu;
         }
-        actFunctions[^1] = IActivationFunction.FunctionType.Sigmoid;
+        actFunctions[^1] = ActivationFunctionType.Sigmoid;
 
         Network.Instance.NeuralNetwork = 
             new NeuralNetwork(
                 featureCount: featureCount,
                 layerSizes: layerSizes, 
                 actFunctions: actFunctions, 
-                lossFunction: ILossFunction.LossType.LogisticLoss
+                lossFunction: LossType.LogisticLoss
             );
 
         print(Network.Instance.NeuralNetwork);
