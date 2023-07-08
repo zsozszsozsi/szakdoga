@@ -5,6 +5,8 @@ using UnityEngine;
 using Tensorflow.Keras.Engine;
 using Tensorflow.Keras.Layers;
 using static Tensorflow.KerasApi;
+using Tensorflow.NumPy;
+using System.Linq;
 
 public class Test : MonoBehaviour
 {
@@ -13,8 +15,8 @@ public class Test : MonoBehaviour
 
     public void Start()
     {
-        //fnn.PrepareData();
-        //fnn.BuildModel();
+        fnn.PrepareData();
+        fnn.BuildModel();
     }
 
     float time = 0f;
@@ -23,19 +25,20 @@ public class Test : MonoBehaviour
     {
         time += Time.deltaTime;
         
-        if(time > 0.5f && counter < 10)
+        if(time > 0.25f && counter < 10)
         {
             time = 0f;
 
-            cnn.Train();
+            //cnn.Train();
+            fnn.Train();
             counter++;
         }
 
-        if(counter == 10 && time > 0.5f)
+        if(counter == 30 && time > 0.5f)
         {
             time = 0f;
             var idx = Mathf.RoundToInt(Random.Range(0, fnn.y_test.size));
-            //fnn.Test(idx);
+            fnn.Test(idx);
         }
     }
 }
@@ -109,6 +112,7 @@ public class Fnn
 {
     public Model model;
     public Tensorflow.NumPy.NDArray x_train, y_train, x_test, y_test;
+    public NDArray y_train_onehot, y_test_onehot;
 
     public void PrepareData()
     {
@@ -118,6 +122,14 @@ public class Fnn
 
         y_train = y_train[":1000"];
         y_test = y_test[":100"];
+
+        y_train_onehot = np.zeros(((int)y_train.size, 10), dtype: Tensorflow.TF_DataType.TF_FLOAT);
+        y_train_onehot[np.arange((int)y_train.size), y_train] = 1f;
+        Debug.Log(y_train_onehot[0]);
+
+        y_test_onehot = np.zeros(((int)y_test.size, 10), dtype: Tensorflow.TF_DataType.TF_FLOAT);
+        y_test_onehot[np.arange((int)y_test.size),y_test] = 1f;
+
     }
 
     public void BuildModel()
