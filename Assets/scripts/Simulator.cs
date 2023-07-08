@@ -71,7 +71,7 @@ public class Simulator : MonoBehaviour
         biases[0] = B0.value;
 
 
-        network = new NeuralNetwork(2, new int[] { 1 }, new IActivationFunction.FunctionType[] { IActivationFunction.FunctionType.Sigmoid }, ILossFunction.LossType.LogisticLoss);
+        network = new NeuralNetwork(2, new int[] { 1 }, new ActivationFunctionType[] { ActivationFunctionType.Sigmoid }, LossType.LogisticLoss);
         //Debug.Log(network);
         //DecisionBoundary.DrawDecisionBoundary(network);
         DecisionBoundary.DrawDecisionBoundaryWithText(Network.Instance.NeuralNetwork);

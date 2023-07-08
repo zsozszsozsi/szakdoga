@@ -9,8 +9,8 @@ public class TestBackProp : MonoBehaviour
     {
         var network = new NeuralNetwork(3, 
             new int[]{ 4, 2}, 
-            new IActivationFunction.FunctionType[] {IActivationFunction.FunctionType.Sigmoid, IActivationFunction.FunctionType.TanH},
-            ILossFunction.LossType.LogisticLoss);
+            new ActivationFunctionType[] { ActivationFunctionType.Sigmoid, ActivationFunctionType.TanH},
+            LossType.LogisticLoss);
 
         
         network.Layers[0].Units[0].Bias = -2;
