@@ -7,6 +7,8 @@ using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Factorization;
 using System;
 using System.Linq;
+using System.Diagnostics;
+using Debug = UnityEngine.Debug;
 
 public class PCA
 {
@@ -69,18 +71,21 @@ public class PCA
     {
         CalculateMean();
         CalculateDeviation();
-        
+
         /*string mean = "";
         string std = "";
         for (int i = 0; i < ColCount; i++)
         {
             mean += Mean[i] + "\t";
+            if(i % 28 == 0) mean += "\n";
+
             std += Deviation[i] + "\t";
+            if (i % 28 == 0) std += "\n";
+
         }
 
         Debug.Log(mean);
         Debug.Log(std);*/
-
         RemoveZeroDeviationCols();
         Standardization();
 
@@ -96,8 +101,8 @@ public class PCA
         Debug.Log(tmp);*/
 
         CovMatrix = new float[ColCount, ColCount];
-
         CalculateCoviranceMatrix();
+
         /*string tmp = "";
         for (int i = 0; i < ColCount; i++)
         {
@@ -108,9 +113,9 @@ public class PCA
             tmp += "\n";
         }
         Debug.Log(tmp);*/
-
         CalculateEigenVectors();
-        string temp = "";
+
+        /*string temp = "";
         for (int i = 0; i < Variance.Length; i++)
         {
             temp += Variance[i] + "\t";
@@ -121,14 +126,14 @@ public class PCA
         for (int i = 0; i < EigenValues.Count; i++)
         {
             temp += EigenValues[i].Real + "\t";
-        }
+        }*/
 
         //Debug.Log(temp);
-
         TransformData();
-        ReverseStandardization();
 
-        for(int i = 0; i < EigenVectors.RowCount; i++)
+        //ReverseStandardization();
+
+        /*for (int i = 0; i < EigenVectors.RowCount; i++)
         {
             string tmp = "";
             for (int j = 0; j < EigenVectors.ColumnCount; j++)
@@ -136,7 +141,7 @@ public class PCA
                 tmp += EigenVectors[i, j] + "\t";
             }
             //Debug.Log(tmp);
-        }
+        }*/
 
         /*for(int i = 0; i < CovMatrix.GetLength(0); i++)
         {
