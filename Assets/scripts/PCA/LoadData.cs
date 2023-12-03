@@ -1,33 +1,43 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEditor;
 using System.Linq;
 using System.Globalization;
-using SmartDLL;
-using static UnityEngine.GraphicsBuffer;
 using System.Diagnostics;
 using Debug = UnityEngine.Debug;
-using System.IO;
-using JetBrains.Annotations;
-using TMPro;
-using static System.Net.Mime.MediaTypeNames;
+using System.Threading.Tasks;
+using System.Data;
 
 public class LoadData : MonoBehaviour
 {
-    public GameObject canvas;
-    public GameObject InputField;
+    public GameObject SetupScene;
+    public GameObject ParamsScene;
+    public GameObject Lab;
+    public GameObject Loading;
+    public Text LoadingText;
+
+    public GameObject GameScene;
+    public GameObject Warning;
+    public Text Statistics;
 
     public GameObject Cube;
     public GameObject Spawner;
-    
+
+    public GameObject ObjectToggle;
+
+    private int DimensionCount = 3;
 
     private List<Texture2D> textureList = new ();
     private float[,] data;
-    private List<int> labels = new ();
+    private List<string> labels = new ();
 
-    private List<Color> ColorMap = new () {
+    private bool IsPCAComputing = false;
+    private bool IsCSVLoading = false;
+    private bool IsDatasetTooBig = false;
+
+    private HashSet<string> Categories = new();
+
+    private readonly List<Color> ColorMap = new () {
         new Color32(129, 247, 166, 255), // 0
         new Color32(247, 150, 129, 255), // 1
         new Color32(129, 210, 247, 255), // 2
@@ -39,107 +49,232 @@ public class LoadData : MonoBehaviour
         new Color32( 78, 180, 252, 255), // 8
         new Color32(252,  58,  65, 255)  // 9
     };
-
-    public void TestBtn()
+    
+    public enum LabelPos
     {
-        //var path = EditorUtility.OpenFilePanel("Open csv", "", "csv");
-        string path = InputField.GetComponent<TMP_InputField>().text;
+        First=1,
+        Last=2
+    }
+
+    private async Task LoadCSV(string path, LabelPos labelPos)
+    {
         var stringData = System.IO.File.ReadAllText(path);
         List<string> lines = stringData.Split("\n").ToList();
-       
-        var emptyCount = lines.Where(row => string.IsNullOrEmpty(row) == true).Count() +1;
 
-        data = new float[lines.Count-emptyCount, lines[0].Split(",").Length-2];
+        var emptyCount = lines.Where(row => string.IsNullOrEmpty(row)).Count() + 1;
+
+        data = new float[lines.Count - emptyCount, lines[0].Split(",").Length - 1];
+        textureList = new();
+        Categories = new();
+        labels = new();
+
         var sw = Stopwatch.StartNew();
-        for(int i = 1; i < lines.Count; i++)
+        await Task.Run(() =>
         {
-            var words = lines[i].Split(",");
-
-            if(int.TryParse(words[0].Trim(), out var labelId))
+            for (int i = 1; i < lines.Count; i++)
             {
-                labels.Add(labelId);
-            }
+                if (string.IsNullOrEmpty(lines[i])) continue;
 
-            for(int j = 2; j < words.Length; j++)
-            {
-                if (float.TryParse(words[j].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out var pixel))
+                var words = lines[i].Split(",");
+
+                int startIndex = 0;
+                int endIndex = 0;
+                int modifier = 0;
+
+                if (labelPos == LabelPos.First)
                 {
-                    data[i - 1, j - 2] = pixel;
+                    startIndex = 1;
+                    endIndex = words.Length;
+                    modifier = -1;
+
+                    labels.Add(words[0].Trim());
+
+                    if (!Categories.Contains(labels[^1])) Categories.Add(labels[^1]);
                 }
+                else
+                {
+                    startIndex = 0;
+                    endIndex = words.Length-1;
+
+                    labels.Add(words[^1].Trim());
+
+                    if (!Categories.Contains(labels[^1])) Categories.Add(labels[^1]);
+                }
+
+                for (int j = startIndex; j < endIndex; j++)
+                {
+                    if (float.TryParse(words[j].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out var val))
+                    {
+                        data[i - 1, j + modifier] = val;
+                    }
+                }
+
             }
+        });
 
-        }
+        Categories = Categories.OrderBy(x => x).ToHashSet();
         Debug.Log($"excel load time: {sw.Elapsed}");
+    }
 
+    public async void StartProcessing(string path, int dimensionCount, LabelPos labelPos)
+    {
+        DimensionCount = dimensionCount;
+
+        ParamsScene.SetActive(false);
+        Loading.SetActive(true);
+
+        IsCSVLoading = true;
+        await LoadCSV(path, labelPos);
+        IsCSVLoading = false;
+
+        IsDatasetTooBig = data.GetLength(0) > 10_000;
+
+        var dataSetName = path.Split("/")[^1].Split(".")[0] + "_" + dimensionCount + "D";
+
+        var sw = Stopwatch.StartNew();
         // PCA
         sw.Restart();
-        var pca = new PCA(data, 3);
-        pca.Compute();
+        var pca = new PCA(data, DimensionCount);
+        IsPCAComputing = true;
+        await pca.Compute(dataSetName, usePreComputedData: true);
+        IsPCAComputing = false;
+        Debug.Log($"PCA compute time: {sw.Elapsed}");             
+
         CameraController.IsEnabled = true;
-        Debug.Log($"PCA compute time: {sw.Elapsed}");
 
-        Debug.Log("MNIST LOADED!");
+        SetupScene.SetActive(false);
+        GameScene.SetActive(true);
+        Lab.SetActive(true);
 
-        canvas.GetComponent<Canvas>().enabled = false;       
+        if (IsDatasetTooBig) Warning.SetActive(true);
+
+        Statistics.text = $"Samples: {data.GetLength(0)}\n" +
+            $"Features: {data.GetLength(1)}\n" + 
+            $"Dimension: {DimensionCount}\n" +
+            $"Variance: {pca.RemainingVariance*100:0.00}%";
         
-        for(int i = 0; i < pca.TransformedData.GetLength(0); i++)
+        for(int i = 0; i < data.GetLength(0); i++) // Row Count 
         {
             var texture = new Texture2D(28, 28, TextureFormat.RGB24, false);
-            int rowCount = 0;
-            for(int j = 0; j < data.GetLength(1); j++)
+
+            if(data.GetLength(1) == 28 * 28)
             {
-                if(j%28 == 0)
+                int rowCount = 0;
+                for (int j = 0; j < data.GetLength(1); j++)
                 {
-                    rowCount++;
+                    if ((j + 1) % 28 == 0)
+                    {
+                        rowCount++;
+                    }
+                    texture.SetPixel(rowCount, j % 28, new Color(data[i, j], data[i, j], data[i, j]));
                 }
-                texture.SetPixel(rowCount, j % 28, new Color( data[i,j], data[i, j], data[i, j]));
             }
+           
             texture.Apply();
             textureList.Add(texture);
         }
 
-        for(int i = 0; i < ColorMap.Count; i++)
+
+        var objectToggleParent = GameScene.transform.Find("ObjectToggles");
+
+        for (int i = 0; i < Categories.Count; i++)
         {
-            GameObject gameObject = new GameObject($"{i}_objects");
+            var category = Categories.ElementAt(i);
+            var cat_name = $"{category}_objects";
+
+            GameObject gameObject = new GameObject(cat_name);
             gameObject.transform.SetParent(Spawner.transform);
             gameObject.AddComponent<MeshFilter>();
             gameObject.AddComponent<MeshRenderer>();
             gameObject.AddComponent<MeshCombiner>();
+
+            var toggle = Instantiate(ObjectToggle, objectToggleParent);
+            toggle.GetComponentInChildren<Text>().text = cat_name;
+            toggle.transform.position = new Vector2(toggle.transform.position.x, toggle.transform.position.y + (i * -40));
+            toggle.transform.GetComponent<Toggle>().onValueChanged.AddListener((value) => { HideShowObjects(cat_name, value); });
         }
 
-        for(int i = 0; i < pca.TransformedData.GetLength(0); i++)
+        for(int i = 0; i < data.GetLength(0); i++)
         {
             GameObject cube = Instantiate(Cube);
 
-            cube.transform.SetParent(Spawner.transform.GetChild(labels[i]));
-            cube.transform.localScale = new Vector3(.5f, .5f, .001f);
-            cube.transform.position = new Vector3(pca.TransformedData[i, 0], pca.TransformedData[i, 1], pca.TransformedData[i, 2]);
+            Categories.TryGetValue(labels[i], out var val);
+            int index = Categories.ToList().IndexOf(val);
+
+            cube.transform.SetParent(Spawner.transform.GetChild(index));
+            cube.transform.localScale = new Vector3(.3f, .3f, .001f);
+            cube.transform.position = new Vector3(pca.TransformedData[i, 0], pca.TransformedData[i, 1], DimensionCount == 3 ? pca.TransformedData[i, 2] : 0);
             cube.GetComponent<Renderer>().material.mainTexture = textureList[i];
-            cube.GetComponent<Renderer>().material.color = ColorMap[labels[i]];
+            cube.GetComponent<Renderer>().material.color = ColorMap[index];
+
             cube.transform.Rotate(0, 0, 90);
         }
 
-        // Combine all the meshes into one
-        for(int i = 0; i < Spawner.transform.childCount; i++)
+        if (IsDatasetTooBig)
         {
-            Spawner.transform.GetChild(i).GetComponent<MeshCombiner>().Combine();
+            // Combine all the meshes into one per category
+            for(int i = 0; i < Spawner.transform.childCount; i++)
+            {
+                Spawner.transform.GetChild(i).GetComponent<MeshCombiner>().Combine();
+            }
         }
 
     }
 
-    private void Update()
+    public void HideShowObjects(string cat_name, bool value)
     {
-        for(int i = 0; i < Spawner.transform.childCount; i++)
+        Spawner.transform.Find(cat_name).gameObject.SetActive(value);
+    }
+
+    public void BackBtn()
+    {
+        var objectToggleParent = GameScene.transform.Find("ObjectToggles");
+
+        for (int i = 0; i < Spawner.transform.childCount; i++)
         {
-            for(int j = 0; j < Spawner.transform.GetChild(i).childCount; j++)
+            for (int j = 0; j < Spawner.transform.GetChild(i).childCount; j++)
             {
                 var cube = Spawner.transform.GetChild(i).GetChild(j);
-                //cube.LookAt(Camera.main.transform.position);
-                //cube.Rotate(0, 0, 90);
+                Destroy(cube.gameObject);
+            }
+
+            Destroy(objectToggleParent.GetChild(i+1).gameObject); // cause the 0th child is a text we dont want to delete that
+            Destroy(Spawner.transform.GetChild(i).gameObject);
+        }
+
+        GameScene.SetActive(false);
+        Lab.SetActive(false);
+        Loading.SetActive(false);
+        ParamsScene.SetActive(true);
+        SetupScene.SetActive(true);
+    }
+
+    private void Update()
+    {
+        if (IsCSVLoading)
+        {
+            LoadingText.text = "CSV file is loading ...";
+        }
+
+        if (IsPCAComputing)
+        {
+            LoadingText.text = "PCA is computing ...";
+        }
+
+        if (!IsDatasetTooBig)
+        {
+            for (int i = 0; i < Spawner.transform.childCount; i++)
+            {
+                for(int j = 0; j < Spawner.transform.GetChild(i).childCount; j++)
+                {
+                    var cube = Spawner.transform.GetChild(i).GetChild(j);
+                    cube.LookAt(Camera.main.transform.position);
+                    cube.Rotate(0, 0, 90);
+                }
             }
         }
 
-        
-        
+
+
     }
 }

@@ -1,19 +1,20 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Numerics;
-using MathNet.Numerics;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Factorization;
 using System;
 using System.Linq;
-using System.Diagnostics;
 using Debug = UnityEngine.Debug;
+using System.Threading.Tasks;
+using System.IO;
 
 public class PCA
 {
-    private float[,] Data;
     public float[,] TransformedData;
+    public float RemainingVariance;
+
+    private float[,] Data;
 
     private int DimensionCount;   
 
@@ -67,53 +68,116 @@ public class PCA
 
     }
 
-    public void Compute()
+    public async Task Compute(string dataSetName, bool usePreComputedData = false, bool saveData = false)
     {
-        CalculateMean();
-        CalculateDeviation();
-
-        /*string mean = "";
-        string std = "";
-        for (int i = 0; i < ColCount; i++)
+        if (usePreComputedData && !File.Exists($"SavedPrincipalComponents/{dataSetName}_PCA.gd"))
         {
-            mean += Mean[i] + "\t";
-            if(i % 28 == 0) mean += "\n";
-
-            std += Deviation[i] + "\t";
-            if (i % 28 == 0) std += "\n";
-
+            usePreComputedData = false;
+            saveData = true;
         }
 
-        Debug.Log(mean);
-        Debug.Log(std);*/
-        RemoveZeroDeviationCols();
-        Standardization();
-
-        /*string tmp = "";
-        for(int i = 0; i < RowCount; i++)
-        {
-            for(int j = 0; j < ColCount; j++)
+            /*string mean = "";
+            string std = "";
+            for (int i = 0; i < ColCount; i++)
             {
-                tmp += Data[i, j] + "\t";
+                mean += Mean[i] + "\t";
+                if(i % 28 == 0) mean += "\n";
+
+                std += Deviation[i] + "\t";
+                if (i % 28 == 0) std += "\n";
+
             }
-            tmp += "\n";
-        }
-        Debug.Log(tmp);*/
 
-        CovMatrix = new float[ColCount, ColCount];
-        CalculateCoviranceMatrix();
+            Debug.Log(mean);
+            Debug.Log(std);*/
 
-        /*string tmp = "";
-        for (int i = 0; i < ColCount; i++)
-        {
-            for (int j = 0; j < ColCount; j++)
+
+            /*string tmp = "";
+            for(int i = 0; i < RowCount; i++)
             {
-                tmp += CovMatrix[i, j] + "\t";
+                for(int j = 0; j < ColCount; j++)
+                {
+                    tmp += Data[i, j] + "\t";
+                }
+                tmp += "\n";
             }
-            tmp += "\n";
+            Debug.Log(tmp);*/
+
+
+
+            /*string tmp = "";
+            for (int i = 0; i < ColCount; i++)
+            {
+                for (int j = 0; j < ColCount; j++)
+                {
+                    tmp += CovMatrix[i, j] + "\t";
+                }
+                tmp += "\n";
+            }
+            Debug.Log(tmp);*/
+
+        await Task.Run(() => 
+        {
+            if (!usePreComputedData)
+            {
+                CalculateMean();
+                CalculateDeviation();
+
+                RemoveZeroDeviationCols();
+
+                Standardization();
+
+                CovMatrix = new float[ColCount, ColCount];
+                CalculateCoviranceMatrix();
+
+                CalculateEigenVectors();
+
+                TransformData();
+            }
+            else
+            {
+                // load pre computed principal components
+                using (var fileStream = System.IO.File.OpenRead($"SavedPrincipalComponents/{dataSetName}_PCA.gd"))
+                using (var reader = new System.IO.BinaryReader(fileStream))
+                {
+                    RemainingVariance = reader.ReadSingle();
+                    var rowCount = reader.ReadInt32();
+                    var colCount = reader.ReadInt32();
+
+                    TransformedData = new float[rowCount, colCount];
+
+                    for (int i = 0; i < rowCount; i++)
+                    {
+                        for (int j = 0; j < colCount; j++)
+                        {
+                            TransformedData[i, j] = reader.ReadSingle();
+                        }
+                    }
+                }
+            }
+        });
+
+        if(saveData)
+        {
+            Directory.CreateDirectory("SavedPrincipalComponents");
+
+            using (var fileStream = System.IO.File.OpenWrite($"SavedPrincipalComponents/{dataSetName}_PCA.gd"))
+            using (var writer = new System.IO.BinaryWriter(fileStream))
+            {
+                writer.Write(RemainingVariance);
+                writer.Write(TransformedData.GetLength(0));
+                writer.Write(TransformedData.GetLength(1));
+
+                for (int i = 0; i < TransformedData.GetLength(0); i++)
+                {
+                    for (int j = 0; j < TransformedData.GetLength(1); j++)
+                    {
+                        writer.Write(TransformedData[i, j]);
+                    }
+                }
+            }
+                
         }
-        Debug.Log(tmp);*/
-        CalculateEigenVectors();
 
         /*string temp = "";
         for (int i = 0; i < Variance.Length; i++)
@@ -129,7 +193,7 @@ public class PCA
         }*/
 
         //Debug.Log(temp);
-        TransformData();
+
 
         //ReverseStandardization();
 
@@ -322,7 +386,7 @@ public class PCA
         for(int i = 0; i < DimensionCount; i++)
         {
             Variance[i] = Convert.ToSingle(topValues[i] / topValues.Sum());
-            Debug.Log(Variance[i]);
+            RemainingVariance += Variance[i];
         }
 
         var tempCols = new float[DimensionCount][];
@@ -338,6 +402,7 @@ public class PCA
         }
 
         PrincipalComponents = Matrix<float>.Build.DenseOfColumnArrays(tempCols);
+        
 
     }
 
@@ -346,6 +411,8 @@ public class PCA
         // TransformedData =  Data * FeatureVector
 
         TransformedData = Matrix<float>.Build.DenseOfArray(Data).Multiply(PrincipalComponents).ToArray();
+        Debug.Log("row count" + PrincipalComponents.RowCount);
+        Debug.Log("row count" + Data.GetLength(0));
 
 
         for (int i = 0; i < TransformedData.GetLength(0); i++)

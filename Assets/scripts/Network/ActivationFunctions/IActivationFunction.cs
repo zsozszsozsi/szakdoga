@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using Tensorflow.Keras;
 using UnityEngine;
-using static UnityEditor.Handles;
 
 public enum ActivationFunctionType
 {
