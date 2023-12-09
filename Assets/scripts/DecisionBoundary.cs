@@ -7,10 +7,8 @@ public class DecisionBoundary : MonoBehaviour
 {
     private Simulator Simulator;
 
-    [Range(0.1f, 0.5f)]
-    public float Step = 0.1f;
+    private float Step = 0.03f;
 
-    private LineRenderer LineRenderer;
     public GameObject Plane;
     private Texture2D Texture;
 
@@ -19,23 +17,13 @@ public class DecisionBoundary : MonoBehaviour
     {
         Simulator = Simulator.Instance;
 
-        LineRenderer = GetComponent<LineRenderer>();
-        int height = 10;
-        int width = Mathf.CeilToInt(height * (Plane.transform.localScale.y / Plane.transform.localScale.x));
+        int height = Mathf.CeilToInt(Simulator.MaxY * 2 / Step);
+        int width = Mathf.CeilToInt(Simulator.MaxX * 2 / Step);
+        
+
         Texture = new Texture2D(width, height);
 
         Plane.GetComponent<Renderer>().material.mainTexture = Texture;
-    }
-
-    public void DrawDecisionBoundary(float w1, float w2, float b)
-    {
-        LineRenderer.positionCount = 2;
-
-        float y = -(b + w1 * Simulator.MinX) / w2;
-        LineRenderer.SetPosition(0, new Vector3(Simulator.MinX, y, -1f));
-
-        y = -(b + w1 * Simulator.MaxX) / w2;
-        LineRenderer.SetPosition(1, new Vector3(Simulator.MaxX, y, -1f));
     }
 
     public void DrawDecisionBoundaryWithText(NeuralNetwork network)

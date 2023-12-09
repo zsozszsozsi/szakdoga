@@ -2,9 +2,18 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UIElements;
 
 public class Controller : MonoBehaviour
 {
+
+    private int MAX_LAYER = 1+5; // input layer + hidden layers, output layer
+    private int MIN_LAYER = 1; // input layer
+
+    private int MAX_NEURON = 5;
+    private int MIN_NEURON = 1;
+
+    private int OUTPUT_LAYER_NEURON = 1;
 
     public static Controller Instance;
 
@@ -32,7 +41,12 @@ public class Controller : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
+
+        AddInput();
+        AddInput();
+
+        AddLayer();
+
     }
 
     public void BuildConnections()
@@ -41,7 +55,6 @@ public class Controller : MonoBehaviour
         {
             Destroy(Connections.transform.GetChild(i).gameObject);
         }
-
 
         for (int i = 0; i < NeuralNetwork.transform.childCount - 1; i++)
         {
@@ -81,7 +94,7 @@ public class Controller : MonoBehaviour
         if(NeuralNetwork.transform.childCount == 0)
         {
             var inputs = new GameObject("Inputs");
-            inputs.transform.position = new Vector3(0, 0, 0);
+            inputs.transform.position = new Vector3(0, 0, 7);
             inputs.transform.parent = NeuralNetwork.transform;
         }
 
@@ -91,6 +104,7 @@ public class Controller : MonoBehaviour
         if(childCount == 4)
         {
             print("maximum number of inputs is 4!");
+            ErrorManager.Instance.AddError("maximum number of inputs is 4!");
             return;
         }
 
@@ -126,6 +140,7 @@ public class Controller : MonoBehaviour
         if(childCount == 0)
         {
             print("Nothing to remove!");
+            ErrorManager.Instance.AddError("Nothing to remove!");
             return;
         }
 
@@ -161,20 +176,25 @@ public class Controller : MonoBehaviour
 
         if(childCount == 0)
         {
-            print("first you need an input layer!");
+            print("First you need an input layer!");
+            ErrorManager.Instance.AddError("First you need an input layer!");
             return;
         }
 
-        if(childCount == 7)
+        if(childCount == MAX_LAYER)
         {
-            print("Maximum amount of layers is 7");
+            print($"Maximum amount of layers is {MAX_LAYER}");
+            ErrorManager.Instance.AddError($"Maximum amount of layers is {MAX_LAYER}");
             return;
         }
         
         var lastChild = NeuralNetwork.transform.GetChild(childCount - 1);
         var newLayerGO = new GameObject($"Layer{childCount - 1}");
-        Instantiate(LayerBtn, newLayerGO.transform);
+        newLayerGO.AddComponent<BoxCollider2D>();
+        newLayerGO.AddComponent<NeuronManager>();
+
         Instantiate(Neuron, newLayerGO.transform);
+
         newLayerGO.transform.parent = parent;
         newLayerGO.transform.position = lastChild.position;
 
@@ -194,9 +214,17 @@ public class Controller : MonoBehaviour
         var parent = NeuralNetwork.transform;
         var childCount = parent.childCount;
 
+        if(childCount == 1)
+        {
+            print("Can't remove the input layer!");
+            ErrorManager.Instance.AddError("Can't remove the input layer!");
+            return;
+        }
+
         if (childCount != 0)
         {
-            DestroyImmediate(parent.GetChild(childCount - 1).gameObject);
+            DestroyImmediate(parent.GetChild(childCount - 1).gameObject); // -1: list = [Inputs, Layer0, Layer1], childCount = 3, then we need to remove the third one == list[2]
+            
             childCount = parent.childCount;
 
             for(int i = 0; i < childCount; i++)
@@ -205,13 +233,28 @@ public class Controller : MonoBehaviour
             }
 
         }
+        else
+        {
+            ErrorManager.Instance.AddError("There is no layer to remove!");
+            return;
+        }
 
         BuildConnections();
     }
 
-    public void AddNeuron(Transform layer)
+    public void AddNeuron(Transform _layer)
     {
+        var layer = NeuralNetwork.transform.Find(_layer.name);
         var childCount = layer.childCount;
+        layer.GetComponent<BoxCollider2D>().size = new Vector2 (layer.GetComponent<BoxCollider2D>().size.x, childCount);
+
+        if(childCount >= MAX_NEURON) 
+        {
+            print($"Only {MAX_NEURON} neuron per layer!");
+            ErrorManager.Instance.AddError($"Only {MAX_NEURON} neuron per layer!");
+            return;
+        }
+
         var lastInput = layer.GetChild(childCount - 1).position;
 
         Instantiate(Neuron, lastInput, Quaternion.identity, layer);
@@ -232,13 +275,16 @@ public class Controller : MonoBehaviour
         BuildConnections();
     }
 
-    public void RemoveNeuron(Transform layer)
+    public void RemoveNeuron(Transform _layer)
     {
+        var layer = NeuralNetwork.transform.Find(_layer.name);
+
         var childCount = layer.childCount;
 
-        if(childCount == 2) // 2 because first is the button and the second one is the one neuron
+        if(childCount == 1)
         {
             print("Use the remove layer button!");
+            ErrorManager.Instance.AddError("Use the remove layer button!");
             return;
         }
 
@@ -263,19 +309,30 @@ public class Controller : MonoBehaviour
         if(childCount < 2)
         {
             print("First you need to build a network!");
+            ErrorManager.Instance.AddError("First you need to build a network!");
             return;
         }
 
         var featureCount = NeuralNetwork.transform.GetChild(0).childCount;
-        int[] layerSizes = new int[NeuralNetwork.transform.childCount - 1];
+        int[] layerSizes = new int[NeuralNetwork.transform.childCount - 1]; // -1 cause the first layer is input
+
+
         ActivationFunctionType[] actFunctions = new ActivationFunctionType[layerSizes.Length];
 
         for(int i = 1; i < NeuralNetwork.transform.childCount; i++)
         {
-            layerSizes[i - 1] = NeuralNetwork.transform.GetChild(i).childCount - 1;
+            layerSizes[i - 1] = NeuralNetwork.transform.GetChild(i).childCount;
             actFunctions[i - 1] = ActivationFunctionType.LeakyReLu;
         }
         actFunctions[^1] = ActivationFunctionType.Sigmoid;
+
+
+        if (layerSizes[^1] != OUTPUT_LAYER_NEURON)
+        {
+            print($"The last layer can only contain {OUTPUT_LAYER_NEURON} neuron!");
+            ErrorManager.Instance.AddError($"The last layer can only contain {OUTPUT_LAYER_NEURON} neuron!");
+            return;
+        }
 
         Network.Instance.NeuralNetwork = 
             new NeuralNetwork(

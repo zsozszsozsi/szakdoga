@@ -6,6 +6,9 @@ using System.Linq;
 public class NeuralNetwork
 {
     public List<Layer> Layers { get; private set; }
+    public int Iterations = 0;
+    public float Loss = 100f;
+
     private ILossFunction LossFunction;
     private System.Random random;
     private List<float> Losses;
@@ -32,6 +35,16 @@ public class NeuralNetwork
         InitializeWeights();
 
         LabelCount = Layers[^1].UnitCount;
+    }
+
+    public void SetWeight(float w0, float w1, float b)
+    {
+        if (Layers.Count != 1 || Layers[0].UnitCount != 1)
+            return;
+
+        Layers[0].Units[0].Weights[0] = w0;
+        Layers[0].Units[0].Weights[1] = w1;
+        Layers[0].Units[0].Bias = b;
     }
 
     private void InitializeLayers(int featureCount, int[] layerSizes, ActivationFunctionType[] actFunctions)
@@ -91,7 +104,7 @@ public class NeuralNetwork
     /// <param name="label"></param>
     /// <param name="inputs"></param>
     /// <returns></returns>
-    private float CalculateLoss(List<List<float>> samples)
+    public float CalculateLoss(List<List<float>> samples)
     {
         float loss = 0f;
 
@@ -246,7 +259,9 @@ public class NeuralNetwork
 
         var loss = CalculateLoss(samples);
         Losses.Add(loss);
-        Debug.Log("Loss after learning: " + loss + "\n" + this);
+
+        Iterations += epochs;
+        Loss = loss;
     }
 
     public List<List<float>> Standardization(List<List<float>> samples)

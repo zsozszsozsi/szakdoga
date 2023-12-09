@@ -4,7 +4,8 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
-
+using TMPro;
+using UnityEngine.SceneManagement;
 
 public class Simulator : MonoBehaviour
 {
@@ -16,12 +17,12 @@ public class Simulator : MonoBehaviour
     private int BlueCount;
     private int RedCount;
 
-    private List<GameObject> Samples;
     private List<List<float>> SamplesForNetwork;
 
     public GameObject Spawner;
-    public GameObject BlueSample;
-    public GameObject RedSample;
+    public GameObject Metrics;
+    public GameObject Settings;
+    public GameObject Buttons;
 
     public Slider W0;
     public Slider W1;
@@ -33,18 +34,14 @@ public class Simulator : MonoBehaviour
     public GameObject DecisionBoundaryGO;
     private DecisionBoundary DecisionBoundary;
 
-    public float MaxX = 2.6f;
-    public float MinX = -2.6f;
+    public float MaxX;
+    public float MinX;
 
-    public float MaxY = 1.27f;
-    public float MinY = -1.27f;
+    public float MaxY;
+    public float MinY;
 
     private float[] weigths = new float[2];
     private float[] biases = new float[1];
-
-    public float b_0;
-    public float w_0;
-    public float w_1;
 
     private NeuralNetwork network;
 
@@ -63,18 +60,30 @@ public class Simulator : MonoBehaviour
     private void Start()
     {
         DecisionBoundary = DecisionBoundaryGO.GetComponent<DecisionBoundary>();
-        Samples = new List<GameObject>();
         SamplesForNetwork = new List<List<float>>();
 
         weigths[0] = W0.value;
         weigths[1] = W1.value;
         biases[0] = B0.value;
 
+        if (Network.Instance == null)
+        {
+            network = new NeuralNetwork(2, new int[] { 1 }, new ActivationFunctionType[] { ActivationFunctionType.Sigmoid }, LossType.LogisticLoss);
+        }
+        else
+        {
+            network = Network.Instance.NeuralNetwork;
+        }
 
-        network = new NeuralNetwork(2, new int[] { 1 }, new ActivationFunctionType[] { ActivationFunctionType.Sigmoid }, LossType.LogisticLoss);
-        //Debug.Log(network);
-        //DecisionBoundary.DrawDecisionBoundary(network);
-        DecisionBoundary.DrawDecisionBoundaryWithText(Network.Instance.NeuralNetwork);
+        if(network.Layers.Count != 1 || network.Layers[0].UnitCount != 1)
+        {
+            Settings.SetActive(false);
+            Buttons.transform.localPosition = new Vector3(0, 165f, 0);
+        }
+
+        DecisionBoundary.DrawDecisionBoundaryWithText(network);
+
+        Metrics.GetComponent<TextMeshProUGUI>().text = $"Iterations: _\tLoss: _";
     }
 
 
@@ -85,22 +94,21 @@ public class Simulator : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        w_0 = weigths[0];
-        w_1 = weigths[1];
-        b_0 = biases[0];
-
         if (!IsLearning)
         {
             ClearBtn.interactable = true;
 
             W0.interactable = true;
-            weigths[0] = W0.value;
 
             W1.interactable = true;
-            weigths[1] = W1.value;
 
             B0.interactable = true;
-            biases[0] = B0.value;
+            
+            network.SetWeight(W0.value, W1.value, B0.value);
+            var loss = SamplesForNetwork.Any() ? network.CalculateLoss(SamplesForNetwork).ToString() : "";
+            Metrics.GetComponent<TextMeshProUGUI>().text = $"Iterations: 0\tLoss: {loss:0.00000}";
+            DecisionBoundary.DrawDecisionBoundaryWithText(network);
+            
         }
         else
         {
@@ -109,90 +117,41 @@ public class Simulator : MonoBehaviour
             W0.interactable = false;
             W1.interactable = false;
             B0.interactable = false;
+
+            W0.value = network.Layers[0].Units[0].Weights[0];
+            W1.value = network.Layers[0].Units[0].Weights[1];
+            B0.value = network.Layers[0].Units[0].Bias;
+
         }
 
-        if(RedCount > 0 && BlueCount > 0)
+        if (RedCount > 0 && BlueCount > 0)
             LearnBtn.interactable = true;
         else
             LearnBtn.interactable = false;
-
-        //DecisionBoundary.DrawDecisionBoundary(weigths[0], weigths[1], biases[0]);
-        //DecisionBoundary.DrawDecisionBoundary(network.Layers[0].Units[0].Weights[0], network.Layers[0].Units[0].Weights[1], network.Layers[0].Units[0].Bias);
-        //DecisionBoundary.DrawDecisionBoundary(network);
-        //DecisionBoundary.DrawDecisionBoundary(Network.Instance.NeuralNetwork.Layers[0].Units[0].Weights[0], Network.Instance.NeuralNetwork.Layers[0].Units[0].Weights[1], Network.Instance.NeuralNetwork.Layers[0].Units[0].Bias);
-
-        // Left Click: spawn red sample
-        if (Input.GetMouseButtonDown(0))
-        {
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            RaycastHit hit;
-
-            if (Physics.Raycast(ray, out hit))
-            {
-                if (hit.point.x < MaxX && hit.point.x > MinX && hit.point.y < MaxY && hit.point.y > MinY)
-                {
-                    hit.point = new Vector3(hit.point.x, hit.point.y, -1);
-
-                    var go = Instantiate(RedSample, hit.point, Quaternion.identity, Spawner.transform);
-
-                    RedCount++;
-                    Samples.Add(go);
-                    SamplesForNetwork.Add(new List<float> {go.GetComponent<LabelManager>().Label, go.transform.position.x, go.transform.position.y});
-                }
-            }
-
-        }
-
-        // Right Click: spawn blue sample
-        if (Input.GetMouseButtonDown(1))
-        {
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            RaycastHit hit;
-
-            if (Physics.Raycast(ray, out hit))
-            {
-                if (hit.point.x < MaxX && hit.point.x > MinX && hit.point.y < MaxY && hit.point.y > MinY)
-                {
-                    hit.point = new Vector3(hit.point.x, hit.point.y, -1);
-
-                    var go = Instantiate(BlueSample, hit.point, Quaternion.identity, Spawner.transform);
-
-                    BlueCount++;
-                    Samples.Add(go);
-                    SamplesForNetwork.Add(new List<float> { go.GetComponent<LabelManager>().Label, go.transform.position.x, go.transform.position.y });
-                }
-                
-            }
-        }
         
         t += Time.deltaTime;
 
         if (IsLearning && t > cd)
         {
-            //GradientDescent(100, lr);
-            //network.Learn(100, SamplesForNetwork);
-            //DecisionBoundary.DrawDecisionBoundary(network);
-            
-            if(Network.Instance.NeuralNetwork != null)
-            {
-                Network.Instance.NeuralNetwork.Learn(50, SamplesForNetwork);
-                DecisionBoundary.DrawDecisionBoundaryWithText(Network.Instance.NeuralNetwork);
-            }
-            else
-            {
-                print("First you need to build a network!");
-            }
+            network.Learn(50, SamplesForNetwork);
+            DecisionBoundary.DrawDecisionBoundaryWithText(network);
+            Metrics.GetComponent<TextMeshProUGUI>().text = $"Iterations: {network.Iterations}\tLoss: {network.Loss:0.00000}";
             
             t = 0f;
         }
     }
 
-    public void InstantiateSample(GameObject sample, Vector3 pos)
+    public bool InstantiateSample(GameObject sample, Vector3 pos)
     {
+        if(Spawner.transform.childCount > 500)
+        {
+            ErrorManager.Instance.AddError("Can't spawn more than 500 samples!");
+            return false;
+        }
+
         var go = Instantiate(sample, pos, Quaternion.identity, Spawner.transform);
         var label = go.GetComponent<LabelManager>().Label;
         SamplesForNetwork.Add(new List<float> { label, go.transform.position.x, go.transform.position.y });
-        Samples.Add(go);
         
         if(label == 1)
         {
@@ -202,21 +161,29 @@ public class Simulator : MonoBehaviour
         {
             BlueCount++;
         }
+
+        return true;
     }
 
     public void ClearSamples()
     {
-        
-        for(int i = 0; i < Samples.Count; i++)
+        for(int i = 0; i < Spawner.transform.childCount; i++)
         {
-            Destroy(Samples[i]);
+            Destroy(Spawner.transform.GetChild(i).gameObject);
         }
 
-        Samples = new List<GameObject>();
         SamplesForNetwork = new List<List<float>>();
 
         RedCount = 0;
         BlueCount = 0;
+
+        network.Iterations = 0;
+      
+    }
+
+    public void BackToBuilder()
+    {
+        SceneManager.LoadScene("NetworkBuilder");
     }
 
     public void Learn()
@@ -224,101 +191,5 @@ public class Simulator : MonoBehaviour
         IsLearning = !IsLearning;
         LearnBtn.GetComponentInChildren<Text>().text = IsLearning ? "Stop Learning!": "Start Learning!";
         //SamplesForNetwork = Network.Instance.NeuralNetwork.Standardization(SamplesForNetwork);
-    }
-
-    private float Sigmoid(float x)
-    {
-        return 1 / ( 1 + Mathf.Exp(-x) );
-    }
-
-    private float ComputeOutput(Transform sample)
-    {
-        return Sigmoid(
-            weigths[0] * sample.position.x
-            + weigths[1] * sample.position.y
-            + biases[0]
-            );
-    }
-
-    private float log(float x)
-    {
-        if (x != 0)
-        {
-            return Mathf.Log(x);
-        }
-
-        return float.MinValue;
-    }
-
-    public float Loss()
-    {
-        var loss = 0f;
-
-        for (int i = 0; i < Samples.Count; i++)
-        {
-            var y = Samples[i].transform.GetComponent<LabelManager>().Label; // true label
-
-            var output = ComputeOutput(Samples[i].transform);
-
-            loss += -y * log(output) - ( 1 - y ) * log(1 - output);
-        }
-
-        // Loss func is 1/N * (-y * log(y^) - (1-y) * log(1-y^))
-
-        return loss/Samples.Count;
-    }
-
-
-    private void GradientDescent(int epochs, float lr)
-    {
-        System.Random random = new System.Random();
-        
-        for(int i = 0; i < epochs; i++)
-        {
-            Samples = Samples.OrderBy(x => random.Next()).ToList().Take(50).ToList();
-
-            var errors = new float[Samples.Count];
-
-            for(int j = 0; j < Samples.Count; j++)
-            {
-                var y_true = Samples[j].GetComponent<LabelManager>().Label;
-                var y_pred = ComputeOutput(Samples[j].transform);
-                errors[j] = y_pred - y_true;
-
-                //Debug.Log(errors[j] + ": " + (y_true == 0 ? "Blue" : "Red"));
-            }
-
-            for(int j = 0; j < weigths.Length; j++)
-            {
-                float gradient = 0f;
-
-                for(int k = 0; k < Samples.Count; k++)
-                {
-                    if (j == 0)
-                        gradient += errors[k] * Samples[k].transform.position.x;
-                    else
-                        gradient += errors[k] * Samples[k].transform.position.y;
-                }
-
-                weigths[j] -= lr * gradient / Samples.Count; 
-            }
-
-            for(int j = 0; j < biases.Length; j++)
-            {
-                float gradient = 0f;
-                for(int k = 0; k < Samples.Count; k++)
-                {
-                    gradient += errors[k] * 1;
-                }
-
-                biases[j] -= lr * gradient / Samples.Count;
-            }
-
-            W0.value = weigths[0];
-            W1.value = weigths[1];
-            B0.value = biases[0];
-        }
-
-        Debug.Log("Loss: " + Loss());
     }
 }

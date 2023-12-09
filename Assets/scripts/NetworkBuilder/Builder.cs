@@ -6,14 +6,13 @@ public class Builder : MonoBehaviour
 {
     private Controller Controller;
 
-    // Start is called before the first frame update
     void Start()
     {
         Controller = Controller.Instance;
     }
 
-    private void OnMouseOver()
+    public void Build()
     {
-        if (Input.GetMouseButtonDown(0)) Controller.BuildNetwork();
+        Controller.BuildNetwork();
     }
 }

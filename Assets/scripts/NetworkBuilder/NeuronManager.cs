@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class NeuronManager : MonoBehaviour
 {
@@ -12,9 +13,16 @@ public class NeuronManager : MonoBehaviour
         Controller = Controller.Instance;
     }
 
+
     private void OnMouseOver()
     {
-        if (Input.GetMouseButtonDown(0)) Controller.AddNeuron(transform.parent);
-        if (Input.GetMouseButtonDown(1)) Controller.RemoveNeuron(transform.parent);
+        if (Input.GetMouseButtonDown(0))
+        {
+            Controller.AddNeuron(transform);
+        }
+        else if(Input.GetMouseButtonDown(1))
+        {
+            Controller.RemoveNeuron(transform);
+        }
     }
 }
