@@ -159,14 +159,14 @@ public class LoadData : MonoBehaviour
 
             if(data.GetLength(1) == 28 * 28)
             {
-                int rowCount = 0;
+                int rowCount = 27;
                 for (int j = 0; j < data.GetLength(1); j++)
                 {
                     if ((j + 1) % 28 == 0)
                     {
-                        rowCount++;
+                        rowCount--;
                     }
-                    texture.SetPixel(rowCount, j % 28, new Color(data[i, j], data[i, j], data[i, j]));
+                    texture.SetPixel(j % 28, rowCount, new Color(data[i, j], data[i, j], data[i, j]));
                 }
             }
            
@@ -206,8 +206,6 @@ public class LoadData : MonoBehaviour
             cube.transform.position = new Vector3(pca.TransformedData[i, 0], pca.TransformedData[i, 1], DimensionCount == 3 ? pca.TransformedData[i, 2] : 0);
             cube.GetComponent<Renderer>().material.mainTexture = textureList[i];
             cube.GetComponent<Renderer>().material.color = ColorMap[index];
-
-            cube.transform.Rotate(0, 0, 90);
         }
 
         if (IsDatasetTooBig)
@@ -269,7 +267,6 @@ public class LoadData : MonoBehaviour
                 {
                     var cube = Spawner.transform.GetChild(i).GetChild(j);
                     cube.LookAt(Camera.main.transform.position);
-                    cube.Rotate(0, 0, 90);
                 }
             }
         }
