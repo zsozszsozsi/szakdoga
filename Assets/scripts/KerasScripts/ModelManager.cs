@@ -52,7 +52,7 @@ public class ModelManager : MonoBehaviour
         ResetBtn.interactable = false;
         ResetBtn.onClick.AddListener(() => ResetModel());
 
-        Model = new LeNet5();
+        Model = new Fnn();
         Model.PrepareData();
         Model.BuildModel();
 

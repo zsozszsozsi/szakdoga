@@ -98,6 +98,36 @@ public class InspectorManager : MonoBehaviour
         Image.texture = texture;
     }
 
+    public void Draw(NDArray arr)
+    {
+        var data = ModelManager.Model.x_test[index] * 255;
+
+        var texture = new Texture2D(28, 28, TextureFormat.RGB24, false);
+
+        int rowCount = 27;
+        for (int i = 0; i < (int)arr.size; i++)
+        {
+            if ((i + 1) % 28 == 0)
+            {
+                rowCount--;
+            }
+            texture.SetPixel(i % 28, rowCount, new Color(arr[i], arr[i], arr[i]));
+
+        }
+
+        LabelText.text = "Label: " + ModelManager.Model.y_test[index];
+
+        texture.SetPixel(0, 0, Color.red);
+        texture.SetPixel(0, 27, Color.green);
+        texture.SetPixel(27, 0, Color.blue);
+        texture.SetPixel(27, 27, Color.black);
+
+
+        texture.Apply();
+
+        Image.texture = texture;
+    }
+
     // Update is called once per frame
     void Update()
     {

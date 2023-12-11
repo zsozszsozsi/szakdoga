@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.44657898, g: 0.4964133, b: 0.5748178, a: 1}
+  m_IndirectSpecularColor: {r: 0.44657874, g: 0.49641258, b: 0.5748172, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -575,7 +575,7 @@ GameObject:
   - component: {fileID: 235086265}
   m_Layer: 5
   m_Name: Canvas
-  m_TagString: Untagged
+  m_TagString: Canvas
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1080,6 +1080,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 107e871279572ce4e9cc02f3dbd0fa45, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  EpochSlider: {fileID: 0}
+  EpochData: {fileID: 0}
+  StartTrainBtn: {fileID: 0}
+  ResetBtn: {fileID: 0}
+  TrainLog: {fileID: 0}
+  train_log: {fileID: 0}
+  IsSetupDone: 0
 --- !u!114 &405230868
 MonoBehaviour:
   m_ObjectHideFlags: 0
