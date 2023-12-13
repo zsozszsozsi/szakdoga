@@ -196,44 +196,26 @@ public class Spawner : MonoBehaviour
 
     public void Pattern4()
     {
-        for (int i = 0; i < 100; i++)
+        // load pre computed principal components
+        using (var fileStream = System.IO.File.OpenRead($"Patterns/pattern4.gd"))
+        using (var reader = new System.IO.BinaryReader(fileStream))
         {
-            float rand = Random.Range(1f, 4f);
+            var rowCount = reader.ReadInt32();
 
-            var p0 = new Vector2(Simulator.MaxX, Simulator.MinY / rand);
-            var p1 = new Vector2(Simulator.MaxX / rand, Simulator.MinY / rand);
-            var p2 = new Vector2(Simulator.MaxX / rand, Simulator.MinY);
+            List<List<float>> samples = new();
 
-            float t = Random.value;
-
-            var x = Mathf.Pow(1 - t, 2) * p0.x + 2 * (1 - t) * t * p1.x + Mathf.Pow(t, 2) * p2.x;
-            var y = Mathf.Pow(1 - t, 2) * p0.y + 2 * (1 - t) * t * p1.y + Mathf.Pow(t, 2) * p2.y;
-
-            if (!Simulator.InstantiateSample(RedSample, new Vector3(x, y, -1f)))
+            for (int i = 0; i < rowCount; i++)
             {
-                return;
+                samples.Add(new());
+                var colCount = reader.ReadInt32();
+
+                for (int j = 0; j < colCount; j++)
+                {
+                    
+                    samples[i].Add(reader.ReadSingle());
+                }
+                Simulator.InstantiateSample(samples[i][0] == 1 ? RedSample : BlueSample, new Vector3(samples[i][1], samples[i][2], -1f));
             }
-
-        }
-
-        for (int i = 0; i < 100; i++)
-        {
-            float rand = Random.Range(-0.1f, 1f);
-
-            var p0 = new Vector2(Random.Range(Simulator.MaxX / 4, Simulator.MaxX), Random.Range(Simulator.MinY / 4, Simulator.MaxY / 4));
-            var p1 = new Vector2(Random.Range(Simulator.MinX / 4, Simulator.MaxX /4), Random.Range(Simulator.MinY / 4, Simulator.MaxY / 4));
-            var p2 = new Vector2(Random.Range(Simulator.MinX / 4, Simulator.MaxX / 4), Random.Range(Simulator.MinY, Simulator.MinY / 4));
-
-            float t = Random.value;
-
-            var x = Mathf.Pow(1 - t, 2) * p0.x + 2 * (1 - t) * t * p1.x + Mathf.Pow(t, 2) * p2.x;
-            var y = Mathf.Pow(1 - t, 2) * p0.y + 2 * (1 - t) * t * p1.y + Mathf.Pow(t, 2) * p2.y;
-
-            if (!Simulator.InstantiateSample(BlueSample, new Vector3(x, y, -1f)))
-            {
-                return;
-            }
-
         }
     }
 }

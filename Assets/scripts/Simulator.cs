@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
+using System.IO;
 
 public class Simulator : MonoBehaviour
 {
@@ -184,6 +185,26 @@ public class Simulator : MonoBehaviour
     public void BackToBuilder()
     {
         SceneManager.LoadScene("NetworkBuilder");
+    }
+
+    public void SavePattern()
+    {
+        Directory.CreateDirectory("SavedPrincipalComponents");
+
+        using (var fileStream = System.IO.File.OpenWrite($"Patterns/pattern4.gd"))
+        using (var writer = new System.IO.BinaryWriter(fileStream))
+        {
+            writer.Write(SamplesForNetwork.Count);
+            print(SamplesForNetwork.Count);
+            for (int i = 0; i < SamplesForNetwork.Count; i++)
+            {
+                writer.Write(SamplesForNetwork[i].Count);
+                for (int j = 0; j < SamplesForNetwork[i].Count; j++)
+                {
+                    writer.Write(SamplesForNetwork[i][j]);
+                }
+            }
+        }
     }
 
     public void Learn()
