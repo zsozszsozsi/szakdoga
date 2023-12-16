@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using MathNet;
+using Tensorflow.Keras.Metrics;
 
 public class Unit
 {
@@ -12,21 +14,25 @@ public class Unit
 
     public IActivationFunction Activation { get; private set; }
 
+    private MathNet.Numerics.Distributions.Normal normalDist;
+
     public Unit(int weightsCount, IActivationFunction activation)
     {
         this.Weights = new float[weightsCount];
         this.Activation = activation;
         this.Grad = 0;
         this.GradSum = 0;
-
     }
 
-    public void InitWeights(int outCount = 0)
+    public void InitWeights(int outCount = 1)
     {
+        normalDist = new MathNet.Numerics.Distributions.Normal(0, Mathf.Sqrt(2f / outCount));
+
         for (int i = 0; i < Weights.Length; i++)
         {
-            var sd = Mathf.Sqrt(2f / (Weights.Length + outCount));
-            Weights[i] = Random.value * sd;
+            //var sd = Mathf.Sqrt(2f / (Weights.Length + outCount));
+            //Weights[i] = Random.value * sd;
+            Weights[i] = (float)normalDist.Sample();
         }
         
 

@@ -43,9 +43,11 @@ public class InspectorManager : MonoBehaviour
             while (!ModelManager.IsSetupDone) { }
         });
 
-        LabelText.text = "Label: " + ModelManager.Model.y_test[index];
-        IndexLabel.text = $"{index + 1} / {ModelManager.Model.x_test.shape[0]}";
+        LabelText.text = "Label: " + ModelManager.Y_test[index];
+        IndexLabel.text = $"{index + 1} / {ModelManager.X_test.shape[0]}";
         Draw();
+
+        
     }
 
     public void GoLeft()
@@ -53,7 +55,7 @@ public class InspectorManager : MonoBehaviour
         if (index != 0)
         {
             index--;
-            IndexLabel.text = $"{index+1} / {ModelManager.Model.x_test.shape[0]}";
+            IndexLabel.text = $"{index+1} / {ModelManager.X_test.shape[0]}";
             Draw();
         }
 
@@ -61,20 +63,21 @@ public class InspectorManager : MonoBehaviour
 
     public void GoRight()
     {
-        if (index < (int)ModelManager.Model.x_test.size)
+        if (index < (int)ModelManager.X_test.size)
         {
             index++;
-            IndexLabel.text = $"{index + 1} / {ModelManager.Model.x_test.shape[0]}";
+            IndexLabel.text = $"{index + 1} / {ModelManager.Y_test.shape[0]}";
             Draw();
         }
     }
     public void Draw()
     {
-        var data = ModelManager.Model.x_test[index] * 255;
+        var data = ModelManager.X_test[index] * 255;
 
         var texture = new Texture2D(28, 28, TextureFormat.RGB24, false);
 
         int rowCount = 27;
+        int sum = 0;
         for (int i = 0; i < (int)data.size; i++)
         {
             if ((i + 1) % 28 == 0)
@@ -82,10 +85,14 @@ public class InspectorManager : MonoBehaviour
                 rowCount--;
             }
             texture.SetPixel(i % 28, rowCount, new Color(data[i], data[i], data[i]));
-            
+            sum += data[i] == 0f ? 1 : 0;
+
+
         }
 
-        LabelText.text = "Label: " + ModelManager.Model.y_test[index];
+        print("sum: " + sum);
+
+        LabelText.text = "Label: " + ModelManager.Y_test[index];
 
         texture.SetPixel(0, 0, Color.red);
         texture.SetPixel(0, 27, Color.green);
@@ -98,10 +105,8 @@ public class InspectorManager : MonoBehaviour
         Image.texture = texture;
     }
 
-    public void Draw(NDArray arr)
+    public void Draw(NDArray arr, string label)
     {
-        var data = ModelManager.Model.x_test[index] * 255;
-
         var texture = new Texture2D(28, 28, TextureFormat.RGB24, false);
 
         int rowCount = 27;
@@ -115,7 +120,7 @@ public class InspectorManager : MonoBehaviour
 
         }
 
-        LabelText.text = "Label: " + ModelManager.Model.y_test[index];
+        LabelText.text = "Label: " + label;
 
         texture.SetPixel(0, 0, Color.red);
         texture.SetPixel(0, 27, Color.green);
