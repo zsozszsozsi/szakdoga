@@ -1,16 +1,9 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using Tensorflow.Keras.Engine;
-using Tensorflow.Keras.Layers;
-using static Tensorflow.KerasApi;
 using Tensorflow.NumPy;
 using TMPro;
 using System.Linq;
-using Unity.VisualScripting;
-using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
-using System.Security.Cryptography;
 
 public class Drawing : MonoBehaviour
 {
