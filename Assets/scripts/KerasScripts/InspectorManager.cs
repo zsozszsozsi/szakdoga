@@ -10,6 +10,7 @@ using Tensorflow.NumPy;
 using TMPro;
 using Unity.Collections;
 using System.Threading.Tasks;
+using System.Linq;
 
 public class InspectorManager : MonoBehaviour
 {
@@ -17,6 +18,7 @@ public class InspectorManager : MonoBehaviour
 
     public RawImage Image;
     public TextMeshProUGUI LabelText;
+    public TextMeshProUGUI PredictText;
     public TextMeshProUGUI IndexLabel;
 
     private ModelManager ModelManager;
@@ -90,19 +92,20 @@ public class InspectorManager : MonoBehaviour
 
         }
 
-        print("sum: " + sum);
-
         LabelText.text = "Label: " + ModelManager.Y_test[index];
 
-        texture.SetPixel(0, 0, Color.red);
+        /*texture.SetPixel(0, 0, Color.red);
         texture.SetPixel(0, 27, Color.green);
         texture.SetPixel(27, 0, Color.blue);
-        texture.SetPixel(27, 27, Color.black);
+        texture.SetPixel(27, 27, Color.black);*/
         
 
         texture.Apply();
 
         Image.texture = texture;
+
+        var prediction = ModelManager.Instance.Model.Predict(data);
+        PredictText.text = $"Predict: {prediction.First().Key}";
     }
 
     public void Draw(NDArray arr, string label)

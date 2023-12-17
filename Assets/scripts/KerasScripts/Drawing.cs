@@ -52,6 +52,11 @@ public class Drawing : MonoBehaviour
     
     }
 
+    public void ClearCanvas()
+    {
+        pixels.ForEach(x => x.color = Color.black);
+    }
+
     public List<(int, int)> GetNeihgbours(int row, int col)
     {
         var coords = new List<(int, int)>() { (row, col-1), /*(row-1, col-1),*/ (row-1, col), /*(row-1, col+1),*/ (row, col+1), /*(row+1, col+1),*/ (row+1, col), /*(row+1, col-1)*/};

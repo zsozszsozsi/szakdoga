@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -11,14 +12,14 @@ public class Pixel : MonoBehaviour, IPointerEnterHandler
 
     private int row;
     private int col;
-    private List<(int, int)> neighbours;
+    private List<int> neighbours;
     private Color color;
 
     private void Start()
     {
         row = int.Parse( gameObject.name.Split(";")[0] );
         col = int.Parse( gameObject.name.Split(";")[1] );
-        neighbours = Drawing.Instance.GetNeihgbours(row, col);
+        neighbours = Drawing.Instance.GetNeihgbours(row, col).Select(x => Drawing.CoordToIndex(x)).ToList();
 
     }
 
@@ -31,7 +32,7 @@ public class Pixel : MonoBehaviour, IPointerEnterHandler
             Image.color = Color.white;
             foreach(var neighbour in neighbours)
             {
-                Drawing.Instance.pixels[Drawing.CoordToIndex(neighbour)].color = Color.white;
+                Drawing.Instance.pixels[neighbour].color = Color.white;
             }
 
         }
@@ -40,7 +41,7 @@ public class Pixel : MonoBehaviour, IPointerEnterHandler
             Image.color = Color.black;
             foreach (var neighbour in neighbours)
             {
-                Drawing.Instance.pixels[Drawing.CoordToIndex(neighbour)].color = Color.black;
+                Drawing.Instance.pixels[neighbour].color = Color.black;
             }
         }
         
