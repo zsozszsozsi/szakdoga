@@ -65,8 +65,6 @@ public class Unit
 
     private void NoneInit()
     {
-        normalDist = new MathNet.Numerics.Distributions.Normal(0, Mathf.Sqrt(2f / outCount));
-
         for (int i = 0; i < Weights.Length; i++)
         {
 
