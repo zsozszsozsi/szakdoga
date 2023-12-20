@@ -2,6 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum WeightInit
+{
+    HeInit = 0,
+    XavierInit = 1,
+    None = 2,
+}
+
 public class Unit
 {
     public float[] Weights { get; set; }
@@ -21,14 +28,59 @@ public class Unit
 
     }
 
-    public void InitWeights(int outCount = 0)
+    public void InitWeights(WeightInit mode, int outCount = 0)
+    {
+        switch (mode)
+        {
+            case WeightInit.HeInit:
+                HeInit(outCount);
+                break;
+            case WeightInit.XavierInit:
+                XavierInit();
+                break;
+            default:
+                NoneInit();
+                break;
+
+        }
+    }
+
+    private void XavierInit()
+    {
+        var lower = -(1 / Mathf.Sqrt(Weights.Length));
+        var upper = (1 / Mathf.Sqrt(Weights.Length));
+
+        for (int i = 0; i < Weights.Length; i++)
+        {
+            
+            Weights[i] = lower + Random.value * (upper - lower);
+        }
+
+
+        Bias = 0f;
+    }
+
+    private void NoneInit()
     {
         for (int i = 0; i < Weights.Length; i++)
         {
-            var sd = Mathf.Sqrt(2f / (Weights.Length + outCount));
+
+            Weights[i] = Random.value;
+        }
+
+
+        Bias = 0f;
+    }
+
+    private void HeInit(int outCount = 0)
+    {
+        var sd = Mathf.Sqrt(2f / (Weights.Length + outCount));
+
+        for (int i = 0; i < Weights.Length; i++)
+        {    
             Weights[i] = Random.value * sd;
         }
-        
+
 
         Bias = 0f;
     }

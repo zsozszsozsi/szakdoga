@@ -15,6 +15,8 @@ public class NeuralNetwork
     private int FeatureCount;
     private int LabelCount;
 
+    private WeightInit WeightInitMode = WeightInit.XavierInit;
+
     public NeuralNetwork(int featureCount, int[] layerSizes, ActivationFunctionType[] actFunctions, LossType lossFunction)
     {
         FeatureCount = featureCount;
@@ -32,6 +34,11 @@ public class NeuralNetwork
 
         InitializeLayers(featureCount, layerSizes, actFunctions);
 
+        if(layerSizes.Length > 3)
+        {
+            WeightInitMode = WeightInit.None;
+        }
+
         InitializeWeights();
 
         LabelCount = Layers[^1].UnitCount;
@@ -45,6 +52,11 @@ public class NeuralNetwork
         Layers[0].Units[0].Weights[0] = w0;
         Layers[0].Units[0].Weights[1] = w1;
         Layers[0].Units[0].Bias = b;
+    }
+
+    public void ResetWeights()
+    {
+        InitializeWeights();
     }
 
     private void InitializeLayers(int featureCount, int[] layerSizes, ActivationFunctionType[] actFunctions)
@@ -68,10 +80,10 @@ public class NeuralNetwork
             {
                 if(i+1 == Layers.Count)
                 {
-                    unit.InitWeights(); // this is the last layer
+                    unit.InitWeights(WeightInitMode); // this is the last layer
                     continue;
                 }
-                unit.InitWeights(Layers[i + 1].UnitCount);
+                unit.InitWeights(WeightInitMode, Layers[i + 1].UnitCount);
             }
         }
     }

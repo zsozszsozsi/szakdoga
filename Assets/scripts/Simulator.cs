@@ -179,6 +179,7 @@ public class Simulator : MonoBehaviour
         BlueCount = 0;
 
         network.Iterations = 0;
+        network.ResetWeights();
       
     }
 
