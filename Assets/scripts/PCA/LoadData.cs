@@ -6,7 +6,7 @@ using System.Globalization;
 using System.Diagnostics;
 using Debug = UnityEngine.Debug;
 using System.Threading.Tasks;
-using System.Data;
+using System;
 
 public class LoadData : MonoBehaviour
 {
@@ -15,6 +15,7 @@ public class LoadData : MonoBehaviour
     public GameObject Lab;
     public GameObject Loading;
     public Text LoadingText;
+    public Text ErrorText;
 
     public GameObject GameScene;
     public GameObject Warning;
@@ -58,7 +59,20 @@ public class LoadData : MonoBehaviour
 
     private async Task LoadCSV(string path, LabelPos labelPos)
     {
-        var stringData = System.IO.File.ReadAllText(path);
+        string stringData = null;
+        try
+        {
+            stringData = System.IO.File.ReadAllText(path);
+        } catch (Exception _)
+        {
+            ErrorText.text = "[ERROR]: File not found! Press ESC and go back to main menu!";
+        }
+
+        if(stringData == null)
+        {
+            await Task.Run(() => { while (true) ; });
+        }
+
         List<string> lines = stringData.Split("\n").ToList();
 
         var emptyCount = lines.Where(row => string.IsNullOrEmpty(row)).Count() + 1;
@@ -129,14 +143,25 @@ public class LoadData : MonoBehaviour
 
         IsDatasetTooBig = data.GetLength(0) > 10_000;
 
-        var dataSetName = path.Split("/")[^1].Split(".")[0] + "_" + dimensionCount + "D";
+        string datasetName = "";
+        bool usePreComputerData = true;
+        if (path.Contains("/"))
+        {
+            datasetName = path.Split("/")[^1].Split(".")[0] + "_" + dimensionCount + "D";
+        }
+        else
+        {
+            datasetName = path.Split("\\")[^1].Split(".")[0] + "_" + dimensionCount + "D";
+            usePreComputerData = false;
+        }
+        
 
         var sw = Stopwatch.StartNew();
         // PCA
         sw.Restart();
         var pca = new PCA(data, DimensionCount);
         IsPCAComputing = true;
-        await pca.Compute(dataSetName, usePreComputedData: true);
+        await pca.Compute(datasetName, usePreComputedData: usePreComputerData);
         IsPCAComputing = false;
         Debug.Log($"PCA compute time: {sw.Elapsed}");             
 
